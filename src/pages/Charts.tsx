@@ -1,0 +1,763 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useBinanceKlineStream } from "@/hooks/useBinanceKlineStream";
+import { useLivePriceStream } from "@/hooks/useLivePriceStream";
+import {
+  ArrowLeft,
+  ChevronDown,
+  Maximize2,
+  Minimize2,
+  MousePointer2,
+  MousePointerClick,
+  Magnet,
+  Minus,
+  MoveUpRight,
+  Ruler,
+  TrendingUp,
+  TrendingDown,
+  AlignHorizontalDistributeCenter,
+  AlignVerticalJustifyCenter,
+  Square,
+  Sigma,
+  Type as TypeIcon,
+  Brush,
+  Eraser,
+  Undo2,
+  Trash2,
+  Search,
+  CandlestickChart,
+} from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { invokeForexChartData } from "@/lib/forexCache";
+import { isForexSymbol, isCommoditySymbol } from "@/lib/marketSymbols";
+
+// Synthesize OHLC candles from a single current price (used for commodities and as fallback)
+function synthesizeCandles(currentPrice: number, interval: string, count = 80) {
+  const minutesMap: Record<string, number> = {
+    "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240, "1d": 1440, "1w": 10080,
+  };
+  const volMap: Record<string, number> = {
+    "1m": 0.0008, "5m": 0.0014, "15m": 0.002, "30m": 0.0028, "1h": 0.004, "2h": 0.0055, "4h": 0.008, "1d": 0.015, "1w": 0.03,
+  };
+  const minutes = minutesMap[interval] ?? 60;
+  const vol = volMap[interval] ?? 0.005;
+  const start = Date.now() - minutes * count * 60_000;
+  const out: any[] = [];
+  let price = currentPrice * (1 - vol * 2);
+  for (let i = 0; i < count; i++) {
+    const ts = start + i * minutes * 60_000;
+    const open = price;
+    const change = (Math.random() - 0.48) * vol * price;
+    const close = open + change;
+    const range = Math.abs(change) * (Math.random() * 0.6 + 0.6);
+    const high = Math.max(open, close) + range;
+    const low = Math.min(open, close) - range;
+    out.push({
+      timestamp: Math.floor(ts / 1000),
+      open: +open.toFixed(6),
+      high: +high.toFixed(6),
+      low: +low.toFixed(6),
+      close: +close.toFixed(6),
+      volume: Math.floor(Math.random() * 500000),
+    });
+    price = close;
+  }
+  // anchor last candle to current price
+  const last = out[out.length - 1];
+  last.close = currentPrice;
+  last.high = Math.max(last.high, currentPrice);
+  last.low = Math.min(last.low, currentPrice);
+  return out;
+}
+
+// Forex fn expects a single currency (the quote vs USD). Convert "EUR/USD" → "EUR".
+function normalizeForexForChart(sym: string): string {
+  const s = sym.toUpperCase();
+  if (s.includes("/")) {
+    const [base, quote] = s.split("/");
+    if (base === "USD") return quote;
+    return base;
+  }
+  return s;
+}
+import TradingChart, { type Candle, type ChartType } from "@/components/charts/TradingChart";
+import { useChartDrawings, type DrawingMode } from "@/hooks/useChartDrawings";
+import { useChartIndicators } from "@/hooks/useChartIndicators";
+import IndicatorsMenu from "@/components/charts/IndicatorsMenu";
+import AlertsMenu from "@/components/charts/AlertsMenu";
+import { usePriceAlerts } from "@/hooks/usePriceAlerts";
+import BottomNav from "@/components/BottomNav";
+import { toast } from "sonner";
+
+const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"] as const;
+type Tf = (typeof TIMEFRAMES)[number];
+
+const CHART_TYPES: { value: ChartType; label: string }[] = [
+  { value: "candles", label: "Candles" },
+  { value: "heikin", label: "Heikin Ashi" },
+  { value: "line", label: "Line" },
+  { value: "area", label: "Area" },
+  { value: "bars", label: "Bars" },
+];
+
+const TOOLS: { mode: DrawingMode; label: string; Icon: any }[] = [
+  { mode: "cursor", label: "Cursor", Icon: MousePointer2 },
+  { mode: "select", label: "Select / Move", Icon: MousePointerClick },
+  { mode: "trendline", label: "Trend Line", Icon: Minus },
+  { mode: "ray", label: "Ray", Icon: MoveUpRight },
+  { mode: "hline", label: "Horizontal", Icon: AlignHorizontalDistributeCenter },
+  { mode: "vline", label: "Vertical", Icon: AlignVerticalJustifyCenter },
+  { mode: "rectangle", label: "Rectangle", Icon: Square },
+  { mode: "fib", label: "Fib Retr.", Icon: Sigma },
+  { mode: "measure", label: "Measure", Icon: Ruler },
+  { mode: "long", label: "Buy Position", Icon: TrendingUp },
+  { mode: "short", label: "Sell Position", Icon: TrendingDown },
+  { mode: "text", label: "Text", Icon: TypeIcon },
+  { mode: "brush", label: "Brush", Icon: Brush },
+  { mode: "eraser", label: "Eraser", Icon: Eraser },
+];
+
+const POPULAR = [
+  { symbol: "BTC", name: "Bitcoin", market: "Crypto" },
+  { symbol: "ETH", name: "Ethereum", market: "Crypto" },
+  { symbol: "BNB", name: "BNB", market: "Crypto" },
+  { symbol: "SOL", name: "Solana", market: "Crypto" },
+  { symbol: "XRP", name: "Ripple", market: "Crypto" },
+  { symbol: "ADA", name: "Cardano", market: "Crypto" },
+  { symbol: "DOGE", name: "Dogecoin", market: "Crypto" },
+  { symbol: "EUR/USD", name: "Euro / US Dollar", market: "Forex" },
+  { symbol: "GBP/USD", name: "Pound / Dollar", market: "Forex" },
+  { symbol: "USD/JPY", name: "Dollar / Yen", market: "Forex" },
+  { symbol: "XAU", name: "Gold", market: "Commodity" },
+  { symbol: "XAG", name: "Silver", market: "Commodity" },
+  { symbol: "WTI", name: "Crude Oil", market: "Commodity" },
+];
+
+export default function Charts() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSymbol = (searchParams.get("symbol") || "BTC").toUpperCase();
+  const [symbol, setSymbol] = useState<string>(initialSymbol);
+
+  // Sync symbol changes back to URL
+  useEffect(() => {
+    const current = (searchParams.get("symbol") || "").toUpperCase();
+    if (current !== symbol) {
+      setSearchParams({ symbol }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol]);
+
+  // React to URL symbol changes (e.g., back/forward)
+  useEffect(() => {
+    const urlSym = (searchParams.get("symbol") || "").toUpperCase();
+    if (urlSym && urlSym !== symbol) setSymbol(urlSym);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const [tf, setTf] = useState<Tf>("1h");
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
+  const [mode, setMode] = useState<DrawingMode>("cursor");
+  const [color, setColor] = useState("#3b82f6");
+  const [magnet, setMagnet] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [chartType, setChartType] = useState<ChartType>("candles");
+  const [chartTypeOpen, setChartTypeOpen] = useState(false);
+  const { drawings, setDrawings } = useChartDrawings(symbol);
+  const { indicators, setIndicators } = useChartIndicators(symbol);
+  const { alerts, setAlerts } = usePriceAlerts(symbol);
+  const lastPrice = candles[candles.length - 1]?.close;
+
+  // Fire alert toasts
+  useEffect(() => {
+    if (lastPrice == null) return;
+    let changed = false;
+    const next = alerts.map((a) => {
+      if (a.triggered) return a;
+      const hit =
+        (a.direction === "above" && lastPrice >= a.price) ||
+        (a.direction === "below" && lastPrice <= a.price);
+      if (hit) {
+        changed = true;
+        toast.success(`${symbol} ${a.direction} ${a.price.toFixed(2)} — now ${lastPrice.toFixed(2)}`);
+        return { ...a, triggered: true };
+      }
+      return a;
+    });
+    if (changed) setAlerts(next);
+  }, [lastPrice, alerts, symbol, setAlerts]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = q
+      ? POPULAR.filter(
+          (s) => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q),
+        )
+      : POPULAR;
+    // Ensure currently selected symbol is always present in the list
+    const upper = symbol.toUpperCase();
+    const hasCurrent = base.some((s) => s.symbol.toUpperCase() === upper);
+    if (!hasCurrent && upper) {
+      const market = isCommoditySymbol(upper)
+        ? "Commodity"
+        : isForexSymbol(upper)
+        ? "Forex"
+        : "Crypto";
+      return [{ symbol: upper, name: upper, market }, ...base].slice(0, 60);
+    }
+    return base.slice(0, 60);
+  }, [query, symbol]);
+
+  const reqIdRef = useRef(0);
+  const inflightRef = useRef<Map<string, Promise<any>>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    const myReq = ++reqIdRef.current;
+    const upper = symbol.toUpperCase();
+    const isForex = isForexSymbol(upper);
+    const isCommodity = isCommoditySymbol(upper);
+    const key = `${upper}:${tf}`;
+
+    const fetchOnce = (): Promise<any> => {
+      if (isCommodity) {
+        return supabase.functions.invoke("fetch-commodity-chart-data", {
+          body: { symbol: upper, interval: tf },
+        });
+      }
+      if (isForex) {
+        return invokeForexChartData(normalizeForexForChart(upper), tf);
+      }
+      return supabase.functions.invoke("fetch-taapi-data", {
+        body: { symbol: upper, interval: tf },
+      });
+    };
+
+    const load = async () => {
+      try {
+        let promise = inflightRef.current.get(key);
+        if (!promise) {
+          promise = fetchOnce().finally(() => {
+            // small delay so concurrent callers can dedupe
+            setTimeout(() => inflightRef.current.delete(key), 50);
+          });
+          inflightRef.current.set(key, promise);
+        }
+        const res = await promise;
+        // Stale request — ignore
+        if (cancelled || myReq !== reqIdRef.current) return;
+        const { data, error } = res || {};
+        if (error) throw error;
+        const raw = (data?.candles || []) as any[];
+        const mapped: Candle[] = raw
+          .map((k: any) => ({
+            time: Math.floor((k.timestamp ?? k.time ?? 0) / (k.timestamp > 1e12 ? 1000 : 1)),
+            open: Number(k.open),
+            high: Number(k.high),
+            low: Number(k.low),
+            close: Number(k.close),
+            volume: Number(k.volume ?? 0),
+          }))
+          .filter((k) => Number.isFinite(k.open) && k.time > 0);
+        const map = new Map<number, Candle>();
+        mapped.forEach((c) => map.set(c.time, c));
+        const next = Array.from(map.values()).sort((a, b) => a.time - b.time);
+        if (next.length === 0) {
+          setError(`No price data available for ${symbol}`);
+          setCandles([]);
+          return;
+        }
+        const lastClose = next[next.length - 1]?.close;
+        if (!Number.isFinite(lastClose)) {
+          setError(`Invalid price data for ${symbol}`);
+          setCandles([]);
+          return;
+        }
+        setError(null);
+        setCandles((prev) => {
+          if (prev.length === next.length && prev.length > 0) {
+            const a = prev[prev.length - 1];
+            const b = next[next.length - 1];
+            if (a.time === b.time && a.close === b.close && a.open === b.open) return prev;
+          }
+          return next;
+        });
+      } catch (e: any) {
+        console.error("Chart load failed:", e);
+        if (!cancelled && myReq === reqIdRef.current) {
+          setCandles([]);
+          setError(e?.message || `Failed to load chart for ${symbol}`);
+        }
+      } finally {
+        if (!cancelled && myReq === reqIdRef.current) setLoading(false);
+      }
+    };
+
+    setLoading(true);
+    // Debounce rapid switches (timeframe spam, symbol changes)
+    const debounce = setTimeout(load, 120);
+    const id = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+      clearInterval(id);
+    };
+  }, [symbol, tf, retryTick]);
+
+  const isCrypto = !isForexSymbol(symbol) && !isCommoditySymbol(symbol);
+  const [live, setLive] = useState(false);
+
+  const handleLiveCandle = useCallback((c: Candle, _final: boolean) => {
+    setLive(true);
+    setCandles((prev) => {
+      if (!prev.length) return [c];
+      const last = prev[prev.length - 1];
+      if (c.time === last.time) {
+        const next = prev.slice(0, -1);
+        next.push(c);
+        return next;
+      }
+      if (c.time > last.time) {
+        return [...prev, c];
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleCryptoTrade = useCallback((price: number) => {
+    setLive(true);
+    setCandles((prev) => {
+      if (!prev.length) return prev;
+      const last = prev[prev.length - 1];
+      const updated: Candle = {
+        ...last,
+        close: price,
+        high: Math.max(last.high, price),
+        low: Math.min(last.low, price),
+      };
+      if (updated.close === last.close && updated.high === last.high && updated.low === last.low) {
+        return prev;
+      }
+      const next = prev.slice(0, -1);
+      next.push(updated);
+      return next;
+    });
+  }, []);
+
+  useBinanceKlineStream({
+    symbol,
+    interval: tf,
+    enabled: isCrypto,
+    onCandle: handleLiveCandle,
+    onTrade: handleCryptoTrade,
+  });
+
+  // Real-time price stream for Forex & Commodities (server-pushed via SSE,
+  // no client-side polling). Crypto already streams full candles via the
+  // Binance WebSocket above.
+  const isFxOrCommodity = !isCrypto && (isForexSymbol(symbol) || isCommoditySymbol(symbol));
+
+  const intervalSecMap: Record<string, number> = useMemo(() => ({
+    "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+    "1h": 3600, "2h": 7200, "4h": 14400, "1d": 86400, "1w": 604800,
+  }), []);
+  const bucketSec = intervalSecMap[tf] ?? 3600;
+
+  // Anchor = last real price from the upstream stream. Synthetic micro-ticks
+  // wander around this anchor so the candle "breathes" like crypto, but never
+  // drifts away from reality.
+  const anchorRef = useRef<{ price: number; ts: number } | null>(null);
+  const recentPricesRef = useRef<number[]>([]);
+  const synthPriceRef = useRef<number | null>(null);
+
+  const applyPriceToCandles = useCallback((price: number) => {
+    setCandles((prev) => {
+      if (!prev.length) return prev;
+      const last = prev[prev.length - 1];
+      const nowSec = Math.floor(Date.now() / 1000);
+      const curBucket = Math.floor(nowSec / bucketSec) * bucketSec;
+      if (curBucket > last.time) {
+        const newCandle: Candle = {
+          time: curBucket,
+          open: last.close,
+          high: Math.max(last.close, price),
+          low: Math.min(last.close, price),
+          close: price,
+          volume: 0,
+        };
+        return [...prev, newCandle].slice(-500);
+      }
+      const updated: Candle = {
+        ...last,
+        close: price,
+        high: Math.max(last.high, price),
+        low: Math.min(last.low, price),
+      };
+      if (updated.close === last.close && updated.high === last.high && updated.low === last.low) {
+        return prev;
+      }
+      const next = prev.slice(0, -1);
+      next.push(updated);
+      return next;
+    });
+  }, [bucketSec]);
+
+  const handleStreamPrice = useCallback((price: number) => {
+    setLive(true);
+    // Track recent prices for volatility estimation
+    const arr = recentPricesRef.current;
+    arr.push(price);
+    if (arr.length > 30) arr.shift();
+    anchorRef.current = { price, ts: Date.now() };
+    synthPriceRef.current = price;
+    applyPriceToCandles(price);
+  }, [applyPriceToCandles]);
+
+  useLivePriceStream({
+    symbol,
+    enabled: isFxOrCommodity,
+    onPrice: handleStreamPrice,
+  });
+
+  // Synthetic momentum ticker — only for FX/commodity where upstream is slow.
+  // Generates a small mean-reverting random walk around the latest real price
+  // so the chart visibly moves between Yahoo polls (TradingView-style feel).
+  useEffect(() => {
+    if (!isFxOrCommodity) return;
+    let raf = 0;
+    let lastTickAt = 0;
+    const TICK_MS = 220; // ~4-5 synthetic updates per second
+
+    const step = (now: number) => {
+      raf = requestAnimationFrame(step);
+      if (now - lastTickAt < TICK_MS) return;
+      lastTickAt = now;
+
+      const anchor = anchorRef.current;
+      const cur = synthPriceRef.current;
+      if (!anchor || cur == null) return;
+
+      // Estimate volatility from recent real prices (stddev of returns).
+      const arr = recentPricesRef.current;
+      let vol = 0;
+      if (arr.length >= 3) {
+        const rets: number[] = [];
+        for (let i = 1; i < arr.length; i++) {
+          rets.push((arr[i] - arr[i - 1]) / arr[i - 1]);
+        }
+        const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+        const variance = rets.reduce((s, r) => s + (r - mean) ** 2, 0) / rets.length;
+        vol = Math.sqrt(variance);
+      }
+      // Floor volatility so even flat markets show micro-movement
+      const sigma = Math.max(vol * 0.6, anchor.price * 0.00002);
+
+      // Mean-revert toward anchor (Ornstein-Uhlenbeck style)
+      const reversion = (anchor.price - cur) * 0.15;
+      const noise = (Math.random() * 2 - 1) * sigma * anchor.price;
+      let next = cur + reversion + noise;
+
+      // Clamp drift: never wander more than ~3*sigma from anchor
+      const maxDrift = Math.max(sigma * anchor.price * 4, anchor.price * 0.0001);
+      if (Math.abs(next - anchor.price) > maxDrift) {
+        next = anchor.price + Math.sign(next - anchor.price) * maxDrift;
+      }
+
+      synthPriceRef.current = next;
+      applyPriceToCandles(next);
+    };
+
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [isFxOrCommodity, applyPriceToCandles]);
+
+  // Reset synth state when symbol changes
+  useEffect(() => {
+    anchorRef.current = null;
+    synthPriceRef.current = null;
+    recentPricesRef.current = [];
+  }, [symbol]);
+
+
+  useEffect(() => {
+    setLive(false);
+  }, [symbol, tf]);
+
+  const undo = () => setDrawings((prev) => prev.slice(0, -1));
+  const clearAll = () => setDrawings([]);
+
+  return (
+    <div className="flex h-[100dvh] w-full max-w-[100vw] flex-col overflow-x-hidden bg-background text-foreground">
+      {/* Header */}
+      {!fullscreen && (
+        <header className="relative z-50 flex h-14 items-center gap-2 border-b border-border/40 bg-background/80 px-3 backdrop-blur-md">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="rounded-md p-2 hover:bg-muted/40"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setSearchOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/60 px-3 py-1.5 text-sm font-semibold hover:bg-muted/40"
+            >
+              {symbol}
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </button>
+            {searchOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setSearchOpen(false)} />
+                <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border/60 bg-popover shadow-2xl">
+                  <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
+                    <Search className="h-4 w-4 opacity-50" />
+                    <input
+                      autoFocus
+                      placeholder="Search symbols..."
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                  </div>
+                  <div className="max-h-80 overflow-y-auto p-1">
+                    {filtered.map((s) => {
+                      const isActive = s.symbol.toUpperCase() === symbol.toUpperCase();
+                      return (
+                      <button
+                        key={s.symbol}
+                        onClick={() => {
+                          setSymbol(s.symbol.toUpperCase());
+                          setSearchOpen(false);
+                          setQuery("");
+                        }}
+                        className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-muted/50 ${
+                          isActive ? "bg-primary/10 text-primary" : ""
+                        }`}
+                      >
+                        <div>
+                          <div className="font-semibold">{s.symbol}</div>
+                          <div className="text-xs text-muted-foreground">{s.name}</div>
+                        </div>
+                        <span className="rounded-md bg-muted/50 px-2 py-0.5 text-[10px] uppercase">
+                          {s.market}
+                        </span>
+                      </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setChartTypeOpen((v) => !v)}
+                className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-card/60 px-3 py-1.5 text-xs font-semibold hover:bg-muted/40"
+                title="Chart type"
+              >
+                <CandlestickChart className="h-3.5 w-3.5" />
+                {CHART_TYPES.find((t) => t.value === chartType)?.label}
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </button>
+              {chartTypeOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setChartTypeOpen(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-border/60 bg-popover p-1 shadow-2xl">
+                    {CHART_TYPES.map((t) => (
+                      <button
+                        key={t.value}
+                        onClick={() => { setChartType(t.value); setChartTypeOpen(false); }}
+                        className={`block w-full rounded-md px-3 py-1.5 text-left text-xs hover:bg-muted/50 ${
+                          chartType === t.value ? "bg-muted/40 font-semibold text-primary" : ""
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <IndicatorsMenu indicators={indicators} setIndicators={setIndicators} />
+            <AlertsMenu symbol={symbol} currentPrice={lastPrice} alerts={alerts} setAlerts={setAlerts} />
+            <button
+              onClick={() => setFullscreen(true)}
+              className="rounded-md p-2 hover:bg-muted/40"
+              aria-label="Fullscreen"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* Quick instrument selector (mobile-friendly snap scroll) */}
+      {!fullscreen && (
+        <div className="flex snap-x snap-mandatory items-center gap-1.5 overflow-x-auto scroll-smooth border-b border-border/30 px-2 py-1.5 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+          {POPULAR.map((s) => {
+            const active = s.symbol.toUpperCase() === symbol.toUpperCase();
+            return (
+              <button
+                key={s.symbol}
+                onClick={() => setSymbol(s.symbol.toUpperCase())}
+                className={`shrink-0 snap-start rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/50 bg-card/50 text-muted-foreground hover:bg-muted/40"
+                }`}
+              >
+                {s.symbol}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Timeframes */}
+      {!fullscreen && (
+        <div className="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-smooth border-b border-border/30 px-3 py-1.5 scrollbar-hide [-webkit-overflow-scrolling:touch]">
+          {TIMEFRAMES.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTf(t)}
+              className={`shrink-0 snap-start rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                tf === t
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted/40"
+              }`}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
+          {loading && <span className="ml-2 shrink-0 text-xs text-muted-foreground">loading…</span>}
+          {isCrypto && live && !loading && (
+            <span className="ml-2 flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase text-emerald-400">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
+              Live
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Chart */}
+      <div className="relative w-full min-w-0 flex-1 overflow-hidden">
+        <TradingChart symbol={symbol} candles={candles} mode={mode} color={color} magnet={magnet} indicators={indicators} chartType={chartType} alerts={alerts} />
+
+        {/* Loading overlay (only when no data yet) */}
+        {loading && candles.length === 0 && !error && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
+            <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/90 px-4 py-2 text-xs font-medium text-muted-foreground shadow-md">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Loading {symbol} {tf.toUpperCase()}…
+            </div>
+          </div>
+        )}
+
+        {/* Empty / error state with Retry */}
+        {!loading && (error || candles.length === 0) && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+            <div className="mx-4 max-w-sm rounded-2xl border border-border/60 bg-card p-5 text-center shadow-xl">
+              <div className="mb-2 text-sm font-semibold text-foreground">
+                {error ? "Chart unavailable" : `No data for ${symbol}`}
+              </div>
+              <p className="mb-4 text-xs text-muted-foreground">
+                {error ?? `We couldn't load price data for ${symbol} on the ${tf.toUpperCase()} timeframe. Please try again.`}
+              </p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  setRetryTick((n) => n + 1);
+                }}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {fullscreen && (
+          <button
+            onClick={() => setFullscreen(false)}
+            className="absolute right-3 top-3 z-20 rounded-lg border border-border/50 bg-background/80 p-2 backdrop-blur-md"
+            aria-label="Exit fullscreen"
+          >
+            <Minimize2 className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Bottom tool dock */}
+        <div
+          className="absolute left-1/2 z-20 max-w-[calc(100vw-16px)] -translate-x-1/2 snap-x snap-mandatory overflow-x-auto scroll-smooth rounded-2xl border border-border/50 bg-background/80 p-1.5 shadow-2xl backdrop-blur-xl scrollbar-hide [-webkit-overflow-scrolling:touch]"
+          style={{ bottom: `calc(${fullscreen ? "12px" : "76px"} + env(safe-area-inset-bottom))` }}
+        >
+          <div className="flex items-center gap-0.5 w-max">
+            {TOOLS.map((t) => {
+              const active = mode === t.mode;
+              return (
+                <button
+                  key={t.mode}
+                  onClick={() => setMode(t.mode)}
+                  title={t.label}
+                  className={`flex h-9 w-9 shrink-0 snap-start items-center justify-center rounded-lg transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                >
+                  <t.Icon className="h-4 w-4" />
+                </button>
+              );
+            })}
+            <div className="mx-1 h-6 w-px bg-border/50" />
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              title="Color"
+              className="h-7 w-7 cursor-pointer rounded-md border border-border/40 bg-transparent"
+            />
+            <button
+              onClick={() => setMagnet((v) => !v)}
+              title={magnet ? "Magnet: ON (snap to OHLC)" : "Magnet: OFF"}
+              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                magnet
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              }`}
+            >
+              <Magnet className="h-4 w-4" />
+            </button>
+            <button
+              onClick={undo}
+              title="Undo"
+              disabled={!drawings.length}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={clearAll}
+              title="Delete all"
+              disabled={!drawings.length}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-400 disabled:opacity-30"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {!fullscreen && <BottomNav />}
+    </div>
+  );
+}

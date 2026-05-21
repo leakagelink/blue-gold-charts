@@ -1,0 +1,2 @@
+CREATE POLICY "Admins can delete deposit requests" ON public.deposit_requests FOR DELETE USING (has_role(auth.uid(), 'admin'::app_role));
+CREATE POLICY "Admins can delete withdrawal requests" ON public.withdrawal_requests FOR DELETE USING (has_role(auth.uid(), 'admin'::app_role));
