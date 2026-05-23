@@ -39,7 +39,7 @@ export const ComparisonTable = () => {
             <Trophy className="h-3 w-3 mr-1" /> Why Choose Us
           </Badge>
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-black mb-3">
-            TradixoFX vs <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Other Brokers</span>
+            Grow FX Trade vs <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Other Brokers</span>
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
             See how we compare against typical brokers in the industry
@@ -55,7 +55,7 @@ export const ComparisonTable = () => {
                   <th className="text-center p-4 min-w-[140px]">
                     <div className="flex flex-col items-center gap-1">
                       <Badge className="bg-white text-primary border-0 font-bold">
-                        <Trophy className="h-3 w-3 mr-1" /> TradixoFX
+                        <Trophy className="h-3 w-3 mr-1" /> Grow FX Trade
                       </Badge>
                     </div>
                   </th>

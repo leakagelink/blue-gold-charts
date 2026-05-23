@@ -20,7 +20,7 @@ interface WithdrawalNotificationRequest {
 
 const brandHeader = (title: string, gradient: string) => `
   <div style="text-align: center; padding: 30px 20px 20px; background: #ffffff;">
-    <img src="${LOGO_URL}" alt="TradixoFX" style="max-width: 180px; height: auto; margin-bottom: 10px;" />
+    <img src="${LOGO_URL}" alt="Grow FX Trade" style="max-width: 180px; height: auto; margin-bottom: 10px;" />
   </div>
   <div style="background: ${gradient}; padding: 30px; text-align: center;">
     <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700;">${title}</h1>
@@ -29,9 +29,9 @@ const brandHeader = (title: string, gradient: string) => `
 
 const brandFooter = `
   <div style="background: #1a0a0a; padding: 25px 20px; text-align: center; border-radius: 0 0 12px 12px;">
-    <p style="margin: 0 0 8px; color: #d4a017; font-size: 16px; font-weight: 700; letter-spacing: 1px;">TradixoFX</p>
+    <p style="margin: 0 0 8px; color: #d4a017; font-size: 16px; font-weight: 700; letter-spacing: 1px;">Grow FX Trade</p>
     <p style="margin: 0; color: #a89070; font-size: 12px;">Trade Smart. Trade Gold.</p>
-    <p style="margin: 12px 0 0; color: #6b5544; font-size: 11px;">© ${new Date().getFullYear()} TradixoFX. All rights reserved.</p>
+    <p style="margin: 12px 0 0; color: #6b5544; font-size: 11px;">© ${new Date().getFullYear()} Grow FX Trade. All rights reserved.</p>
   </div>
 `;
 
@@ -59,8 +59,8 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedAmount = `${currency === 'USD' ? '$' : currency}${amount.toFixed(2)}`;
     
     const subject = isApproved 
-      ? `✅ TradixoFX: Withdrawal of ${formattedAmount} Processed!` 
-      : "TradixoFX Withdrawal Request Update";
+      ? `✅ Grow FX Trade: Withdrawal of ${formattedAmount} Processed!` 
+      : "Grow FX Trade Withdrawal Request Update";
 
     const htmlContent = isApproved 
       ? `
@@ -107,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             ` : ''}
             <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
-              Your funds remain safe in your TradixoFX wallet. Please review the rejection reason and try again, or contact support.
+              Your funds remain safe in your Grow FX Trade wallet. Please review the rejection reason and try again, or contact support.
             </p>
           </div>
           ${brandFooter}
@@ -121,7 +121,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "TradixoFX <noreply@tradixofx.com>",
+        from: "Grow FX Trade <noreply@growfxtrade.com>",
         to: [email],
         subject: subject,
         html: htmlContent,

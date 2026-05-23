@@ -216,12 +216,12 @@ const Auth = () => {
         >
           <img
             src={logo}
-            alt="TradixoFX"
+            alt="Grow FX Trade"
             className="h-14 w-auto object-contain transition-transform group-hover:scale-110"
           />
           <div>
             <h1 className="text-2xl font-black bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              TradixoFX
+              Grow FX Trade
             </h1>
             <p className="text-xs text-muted-foreground tracking-wider">PREMIUM TRADING</p>
           </div>
@@ -299,7 +299,7 @@ const Auth = () => {
         <div className="relative z-10 flex items-center justify-center p-4 sm:p-8">
           <Card className="w-full max-w-md p-6 sm:p-10 bg-card/70 backdrop-blur-2xl border border-border/50 shadow-2xl shadow-primary/10 animate-scale-in">
             <div className="lg:hidden flex items-center justify-center mb-6">
-              <img src={logo} alt="TradixoFX" className="h-14 w-auto object-contain" />
+              <img src={logo} alt="Grow FX Trade" className="h-14 w-auto object-contain" />
             </div>
 
             <div className="text-center mb-6">
@@ -360,9 +360,9 @@ const Auth = () => {
         <Card className="w-full max-w-md p-6 sm:p-8 bg-card/70 backdrop-blur-2xl border border-border/50 shadow-2xl shadow-primary/10 animate-scale-in">
           {/* Mobile logo */}
           <div className="lg:hidden flex flex-col items-center justify-center mb-6">
-            <img src={logo} alt="TradixoFX" className="h-14 w-auto object-contain" />
+            <img src={logo} alt="Grow FX Trade" className="h-14 w-auto object-contain" />
             <h1 className="text-xl font-black bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mt-2">
-              TradixoFX
+              Grow FX Trade
             </h1>
           </div>
 

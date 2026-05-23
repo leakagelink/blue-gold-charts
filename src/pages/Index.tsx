@@ -196,7 +196,7 @@ const Index = () => {
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 group cursor-pointer">
-              <img src={logo} alt="TradixoFX" className="h-14 w-auto sm:h-20 object-contain group-hover:scale-105 transition-all duration-300" />
+              <img src={logo} alt="Grow FX Trade" className="h-14 w-auto sm:h-20 object-contain group-hover:scale-105 transition-all duration-300" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <Button variant="ghost" onClick={() => navigate("/auth")} className="hover:bg-primary/10 transition-all hidden sm:flex">
@@ -570,7 +570,7 @@ const Index = () => {
         <div className="container mx-auto px-3 sm:px-4 relative z-10">
           <div className="text-center mb-8 sm:mb-16">
             <h2 className="text-2xl sm:text-4xl md:text-6xl font-black mb-3 sm:mb-6">
-              Why Choose <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">TradixoFX?</span>
+              Why Choose <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Grow FX Trade?</span>
             </h2>
             <p className="text-sm sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto px-2">
               Professional-grade tools trusted by thousands of successful traders worldwide
@@ -619,7 +619,7 @@ const Index = () => {
               What Our <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Traders</span> Say
             </h2>
             <p className="text-sm sm:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
-              Join thousands of satisfied traders who trust TradixoFX
+              Join thousands of satisfied traders who trust Grow FX Trade
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8 max-w-7xl mx-auto">
@@ -633,7 +633,7 @@ const Index = () => {
               {
                 name: "Sarah Williams",
                 role: "Crypto Investor",
-                content: "TradixoFX's security features give me peace of mind. The withdrawal process is smooth and customer support is excellent.",
+                content: "Grow FX Trade's security features give me peace of mind. The withdrawal process is smooth and customer support is excellent.",
                 rating: 5
               },
               {
@@ -698,7 +698,7 @@ const Index = () => {
               </span>
             </h2>
             <p className="text-base sm:text-xl md:text-2xl mb-7 sm:mb-12 text-white/90 leading-relaxed max-w-2xl mx-auto px-2">
-              Join 50,000+ successful traders who trust TradixoFX. Start with a free account today.
+              Join 50,000+ successful traders who trust Grow FX Trade. Start with a free account today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
               <Button 
@@ -738,7 +738,7 @@ const Index = () => {
                 Frequently Asked <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Questions</span>
               </h2>
               <p className="text-sm sm:text-xl text-muted-foreground px-2">
-                Everything you need to know about trading with TradixoFX
+                Everything you need to know about trading with Grow FX Trade
               </p>
             </div>
 
@@ -748,7 +748,7 @@ const Index = () => {
                 className="border-2 border-border/50 rounded-xl sm:rounded-2xl px-3 sm:px-6 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all"
               >
                 <AccordionTrigger className="text-sm sm:text-lg font-bold hover:text-primary">
-                  How do I get started with TradixoFX?
+                  How do I get started with Grow FX Trade?
                 </AccordionTrigger>
                 <AccordionContent className="text-xs sm:text-base text-muted-foreground leading-relaxed">
                   Getting started is simple! Click "Get Started" to create your free account. Complete the KYC verification process, 
@@ -774,7 +774,7 @@ const Index = () => {
                 className="border-2 border-border/50 rounded-xl sm:rounded-2xl px-3 sm:px-6 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all"
               >
                 <AccordionTrigger className="text-sm sm:text-lg font-bold hover:text-primary">
-                  Is my money safe on TradixoFX?
+                  Is my money safe on Grow FX Trade?
                 </AccordionTrigger>
                 <AccordionContent className="text-xs sm:text-base text-muted-foreground leading-relaxed">
                   Absolutely! We use bank-level SSL encryption, secure cold storage for crypto assets, and implement strict KYC/AML 
@@ -790,7 +790,7 @@ const Index = () => {
                   What is leverage trading and how does it work?
                 </AccordionTrigger>
                 <AccordionContent className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-                  Leverage allows you to control larger positions with smaller capital. TradixoFX offers leverage up to 100x on 
+                  Leverage allows you to control larger positions with smaller capital. Grow FX Trade offers leverage up to 100x on 
                   select markets. For example, with 10x leverage and $100, you can open a $1,000 position. However, leverage 
                   amplifies both gains and losses, so trade responsibly.
                 </AccordionContent>
@@ -804,7 +804,7 @@ const Index = () => {
                   Are there any trading fees?
                 </AccordionTrigger>
                 <AccordionContent className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-                  TradixoFX operates on a transparent fee structure. We charge competitive spreads on trades with no hidden fees. 
+                  Grow FX Trade operates on a transparent fee structure. We charge competitive spreads on trades with no hidden fees. 
                   There are no deposit fees, and withdrawal fees vary by payment method. Check our fee schedule in your account 
                   settings for detailed information.
                 </AccordionContent>
@@ -818,7 +818,7 @@ const Index = () => {
                   Can I trade on mobile?
                 </AccordionTrigger>
                 <AccordionContent className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-                  Yes! TradixoFX is fully optimized for mobile devices. Access all trading features, manage positions, and monitor 
+                  Yes! Grow FX Trade is fully optimized for mobile devices. Access all trading features, manage positions, and monitor 
                   markets from anywhere using your mobile browser. Our responsive design ensures a seamless trading experience 
                   on any device.
                 </AccordionContent>
@@ -840,7 +840,7 @@ const Index = () => {
               {/* Brand */}
               <div className="flex flex-col items-center md:items-start gap-3 sm:col-span-2 md:col-span-1">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <img src={logo} alt="TradixoFX" className="h-14 w-14 sm:h-16 sm:w-16 object-contain" />
+                  <img src={logo} alt="Grow FX Trade" className="h-14 w-14 sm:h-16 sm:w-16 object-contain" />
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground text-center md:text-left leading-relaxed max-w-xs">
                   Your trusted platform for crypto, forex & commodities trading. Built for professionals, accessible for everyone.
@@ -874,9 +874,9 @@ const Index = () => {
                     </a>
                   </p>
                   <p>
-                    <a href="mailto:support@tradixofx.com" className="hover:text-primary transition-colors inline-flex items-center gap-2">
+                    <a href="mailto:support@growfxtrade.com" className="hover:text-primary transition-colors inline-flex items-center gap-2">
                       <CheckCircle className="h-3.5 w-3.5 text-accent" />
-                      support@tradixofx.com
+                      support@growfxtrade.com
                     </a>
                   </p>
                 </div>
@@ -909,7 +909,7 @@ const Index = () => {
 
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
               <p className="text-xs sm:text-sm text-muted-foreground">
-                © 2007 <span className="font-bold text-foreground">TradixoFX</span>. All rights reserved.
+                © 2007 <span className="font-bold text-foreground">Grow FX Trade</span>. All rights reserved.
               </p>
               <p className="text-[10px] sm:text-xs text-muted-foreground/80 max-w-md">
                 Trading involves substantial risk and may result in loss of capital. Trade responsibly.

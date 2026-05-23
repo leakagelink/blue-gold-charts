@@ -19,7 +19,7 @@ interface DepositNotificationRequest {
 
 const brandHeader = (title: string, gradient: string) => `
   <div style="text-align: center; padding: 30px 20px 20px; background: #ffffff;">
-    <img src="${LOGO_URL}" alt="TradixoFX" style="max-width: 180px; height: auto; margin-bottom: 10px;" />
+    <img src="${LOGO_URL}" alt="Grow FX Trade" style="max-width: 180px; height: auto; margin-bottom: 10px;" />
   </div>
   <div style="background: ${gradient}; padding: 30px; text-align: center;">
     <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700;">${title}</h1>
@@ -28,9 +28,9 @@ const brandHeader = (title: string, gradient: string) => `
 
 const brandFooter = `
   <div style="background: #1a0a0a; padding: 25px 20px; text-align: center; border-radius: 0 0 12px 12px;">
-    <p style="margin: 0 0 8px; color: #d4a017; font-size: 16px; font-weight: 700; letter-spacing: 1px;">TradixoFX</p>
+    <p style="margin: 0 0 8px; color: #d4a017; font-size: 16px; font-weight: 700; letter-spacing: 1px;">Grow FX Trade</p>
     <p style="margin: 0; color: #a89070; font-size: 12px;">Trade Smart. Trade Gold.</p>
-    <p style="margin: 12px 0 0; color: #6b5544; font-size: 11px;">© ${new Date().getFullYear()} TradixoFX. All rights reserved.</p>
+    <p style="margin: 12px 0 0; color: #6b5544; font-size: 11px;">© ${new Date().getFullYear()} Grow FX Trade. All rights reserved.</p>
   </div>
 `;
 
@@ -58,8 +58,8 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedAmount = `${currency === 'USD' ? '$' : currency}${amount.toFixed(2)}`;
     
     const subject = isApproved 
-      ? `✅ TradixoFX: Deposit of ${formattedAmount} Approved!` 
-      : "TradixoFX Deposit Request Update";
+      ? `✅ Grow FX Trade: Deposit of ${formattedAmount} Approved!` 
+      : "Grow FX Trade Deposit Request Update";
 
     const htmlContent = isApproved 
       ? `
@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
               Hi <strong>${userName || 'Trader'}</strong>,
             </p>
             <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
-              Your deposit has been <strong style="color: #7c1d1d;">approved</strong> and credited to your TradixoFX account.
+              Your deposit has been <strong style="color: #7c1d1d;">approved</strong> and credited to your Grow FX Trade account.
             </p>
             <div style="background: linear-gradient(135deg, #fff8e7, #fef0c8); border: 2px solid #d4a017; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center;">
               <p style="margin: 0; color: #7c1d1d; font-size: 14px; font-weight: 600;">Amount Credited</p>
@@ -80,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
               Your funds are now available for trading.
             </p>
             <div style="text-align: center; margin: 30px 0 10px;">
-              <a href="https://tradixofx.com" style="display: inline-block; background: linear-gradient(135deg, #d4a017, #b8860b); color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 700;">Start Trading</a>
+              <a href="https://growfxtrade.com" style="display: inline-block; background: linear-gradient(135deg, #d4a017, #b8860b); color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 700;">Start Trading</a>
             </div>
           </div>
           ${brandFooter}
@@ -117,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "TradixoFX <noreply@tradixofx.com>",
+        from: "Grow FX Trade <noreply@growfxtrade.com>",
         to: [email],
         subject: subject,
         html: htmlContent,
