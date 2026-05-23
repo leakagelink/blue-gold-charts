@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const LOGO_URL = "https://guvgsthwiyhkvmvlouxj.supabase.co/storage/v1/object/public/email-assets/logo.png";
+const LOGO_URL = "https://yuvdzfkgepxchlgxxqmd.supabase.co/storage/v1/object/public/email-assets/logo.png";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
