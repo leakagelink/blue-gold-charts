@@ -121,9 +121,9 @@ const AdminPanel = () => {
 
   // Payment settings state
   const [paymentSettings, setPaymentSettings] = useState({
-    upiId: "tradixofx@upi",
+    upiId: "growfxtrade@upi",
     qrCodeUrl: "",
-    accountName: "TradixoFX Account",
+    accountName: "Grow FX Trade Account",
     accountNumber: "1234567890",
     ifsc: "BANK0001234",
     bankName: "Demo Bank",
@@ -305,9 +305,9 @@ const AdminPanel = () => {
           settings[key] = setting.setting_value;
         });
         setPaymentSettings({
-          upiId: settings.upiId || "tradixofx@upi",
+          upiId: settings.upiId || "growfxtrade@upi",
           qrCodeUrl: settings.qrCodeUrl || "",
-          accountName: settings.accountName || "TradixoFX Account",
+          accountName: settings.accountName || "Grow FX Trade Account",
           accountNumber: settings.accountNumber || "1234567890",
           ifsc: settings.ifscCode || "BANK0001234",
           bankName: settings.bankName || "Demo Bank",
@@ -2181,7 +2181,7 @@ const AdminPanel = () => {
                             setUploadingApp(true);
                             try {
                               const fileExt = file.name.split('.').pop();
-                              const fileName = `tradixofx-app.${fileExt}`;
+                              const fileName = `growfxtrade-app.${fileExt}`;
                               
                               // Delete old file if exists
                               await supabase.storage.from('app-files').remove([fileName]);

@@ -141,7 +141,7 @@ const ResetPassword = () => {
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
-            <img src={logo} alt="TradixoFX" className="h-16 w-auto object-contain" />
+            <img src={logo} alt="Grow FX Trade" className="h-16 w-auto object-contain" />
           </div>
           <div className="flex flex-col items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
@@ -166,7 +166,7 @@ const ResetPassword = () => {
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
-            <img src={logo} alt="TradixoFX" className="h-16 w-auto object-contain" />
+            <img src={logo} alt="Grow FX Trade" className="h-16 w-auto object-contain" />
           </div>
           <p className="text-muted-foreground">Verifying reset link...</p>
         </Card>
@@ -180,7 +180,7 @@ const ResetPassword = () => {
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-8">
-            <img src={logo} alt="TradixoFX" className="h-16 w-auto object-contain" />
+            <img src={logo} alt="Grow FX Trade" className="h-16 w-auto object-contain" />
           </div>
           <div className="flex flex-col items-center gap-4">
             <CheckCircle className="h-16 w-16 text-green-500" />
@@ -199,7 +199,7 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <img src={logo} alt="TradixoFX" className="h-16 w-auto object-contain" />
+          <img src={logo} alt="Grow FX Trade" className="h-16 w-auto object-contain" />
         </div>
 
         <h2 className="text-xl font-semibold text-center mb-2">Set New Password</h2>

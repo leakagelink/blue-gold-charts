@@ -74,7 +74,7 @@ const PageShell = ({
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-accent/30 to-secondary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <img
                   src={logo}
-                  alt="TradixoFX"
+                  alt="Grow FX Trade"
                   className="relative h-11 w-auto sm:h-14 object-contain transition-transform duration-300 group-hover:scale-105"
                 />
               </div>

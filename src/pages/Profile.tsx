@@ -285,7 +285,7 @@ const Profile = () => {
               <div className="min-w-0">
                 <h3 className="font-bold text-sm sm:text-base">Download Mobile App</h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {appDownloadUrl ? "Get the TradixoFX app for better trading" : "App will appear here after Broker upload"}
+                  {appDownloadUrl ? "Get the Grow FX Trade app for better trading" : "App will appear here after Broker upload"}
                 </p>
               </div>
             </div>
