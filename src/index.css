@@ -10,20 +10,20 @@ All colors MUST be HSL.
   :root {
     /* White + Navy Blue — Matte finish, light theme */
     --background: 0 0% 100%;
-    --foreground: 220 60% 12%;
+    --foreground: 160 40% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 60% 12%;
+    --card-foreground: 160 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 60% 12%;
+    --popover-foreground: 160 40% 10%;
 
     /* Navy blue primary - matte */
     --primary: 158 78% 17%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 95%;
-    --secondary-foreground: 220 60% 18%;
+    --secondary-foreground: 160 30% 22%;
 
     --muted: 220 16% 96%;
     --muted-foreground: 220 15% 42%;
@@ -54,10 +54,10 @@ All colors MUST be HSL.
     /* Matte shadows - soft, neutral, no glow */
     --shadow-card: 0 1px 2px hsl(220 30% 20% / 0.04), 0 2px 8px hsl(220 30% 20% / 0.05);
     --shadow-elevated: 0 4px 12px hsl(220 30% 20% / 0.08), 0 12px 28px hsl(220 30% 20% / 0.06);
-    --shadow-glow: 0 8px 24px hsl(220 60% 20% / 0.12);
+    --shadow-glow: 0 8px 24px hsl(160 50% 18% / 0.12);
 
     --sidebar-background: 220 30% 98%;
-    --sidebar-foreground: 220 60% 14%;
+    --sidebar-foreground: 160 35% 14%;
     --sidebar-primary: 158 78% 17%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 22% 94%;
@@ -68,19 +68,19 @@ All colors MUST be HSL.
 
   .dark {
     --background: 0 0% 100%;
-    --foreground: 220 60% 12%;
+    --foreground: 160 40% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 60% 12%;
+    --card-foreground: 160 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 60% 12%;
+    --popover-foreground: 160 40% 10%;
 
     --primary: 158 78% 17%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 95%;
-    --secondary-foreground: 220 60% 18%;
+    --secondary-foreground: 160 30% 22%;
 
     --muted: 220 16% 96%;
     --muted-foreground: 220 15% 42%;
@@ -96,7 +96,7 @@ All colors MUST be HSL.
     --ring: 158 78% 17%;
 
     --sidebar-background: 220 30% 98%;
-    --sidebar-foreground: 220 60% 14%;
+    --sidebar-foreground: 160 35% 14%;
     --sidebar-primary: 158 78% 17%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 22% 94%;
