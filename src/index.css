@@ -10,26 +10,26 @@ All colors MUST be HSL.
   :root {
     /* White + Navy Blue — Matte finish, light theme */
     --background: 0 0% 100%;
-    --foreground: 220 60% 12%;
+    --foreground: 160 40% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 60% 12%;
+    --card-foreground: 160 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 60% 12%;
+    --popover-foreground: 160 40% 10%;
 
     /* Navy blue primary - matte */
-    --primary: 220 70% 22%;
+    --primary: 158 78% 17%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 95%;
-    --secondary-foreground: 220 60% 18%;
+    --secondary-foreground: 160 30% 22%;
 
     --muted: 220 16% 96%;
     --muted-foreground: 220 15% 42%;
 
     /* Slightly lighter navy accent */
-    --accent: 220 65% 32%;
+    --accent: 160 80% 26%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 48%;
@@ -40,52 +40,52 @@ All colors MUST be HSL.
 
     --border: 220 18% 90%;
     --input: 220 18% 92%;
-    --ring: 220 70% 22%;
+    --ring: 158 78% 17%;
 
     --radius: 0.75rem;
 
     /* Flat solid colors - no gradients */
-    --gradient-primary: hsl(220 70% 22%);
-    --gradient-accent: hsl(220 65% 32%);
+    --gradient-primary: hsl(158 78% 17%);
+    --gradient-accent: hsl(160 80% 26%);
     --gradient-hero: hsl(0 0% 100%);
-    --gradient-gold: hsl(220 70% 22%);
+    --gradient-gold: hsl(158 78% 17%);
     --gradient-radial: none;
 
     /* Matte shadows - soft, neutral, no glow */
     --shadow-card: 0 1px 2px hsl(220 30% 20% / 0.04), 0 2px 8px hsl(220 30% 20% / 0.05);
     --shadow-elevated: 0 4px 12px hsl(220 30% 20% / 0.08), 0 12px 28px hsl(220 30% 20% / 0.06);
-    --shadow-glow: 0 8px 24px hsl(220 60% 20% / 0.12);
+    --shadow-glow: 0 8px 24px hsl(160 50% 18% / 0.12);
 
     --sidebar-background: 220 30% 98%;
-    --sidebar-foreground: 220 60% 14%;
-    --sidebar-primary: 220 70% 22%;
+    --sidebar-foreground: 160 35% 14%;
+    --sidebar-primary: 158 78% 17%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 22% 94%;
-    --sidebar-accent-foreground: 220 70% 22%;
+    --sidebar-accent-foreground: 158 78% 17%;
     --sidebar-border: 220 18% 88%;
-    --sidebar-ring: 220 70% 22%;
+    --sidebar-ring: 158 78% 17%;
   }
 
   .dark {
     --background: 0 0% 100%;
-    --foreground: 220 60% 12%;
+    --foreground: 160 40% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 60% 12%;
+    --card-foreground: 160 40% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 60% 12%;
+    --popover-foreground: 160 40% 10%;
 
-    --primary: 220 70% 22%;
+    --primary: 158 78% 17%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 95%;
-    --secondary-foreground: 220 60% 18%;
+    --secondary-foreground: 160 30% 22%;
 
     --muted: 220 16% 96%;
     --muted-foreground: 220 15% 42%;
 
-    --accent: 220 65% 32%;
+    --accent: 160 80% 26%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 48%;
@@ -93,16 +93,16 @@ All colors MUST be HSL.
 
     --border: 220 18% 90%;
     --input: 220 18% 92%;
-    --ring: 220 70% 22%;
+    --ring: 158 78% 17%;
 
     --sidebar-background: 220 30% 98%;
-    --sidebar-foreground: 220 60% 14%;
-    --sidebar-primary: 220 70% 22%;
+    --sidebar-foreground: 160 35% 14%;
+    --sidebar-primary: 158 78% 17%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 22% 94%;
-    --sidebar-accent-foreground: 220 70% 22%;
+    --sidebar-accent-foreground: 158 78% 17%;
     --sidebar-border: 220 18% 88%;
-    --sidebar-ring: 220 70% 22%;
+    --sidebar-ring: 158 78% 17%;
   }
 }
 
@@ -165,12 +165,12 @@ All colors MUST be HSL.
 
   /* Solid navy text - matte */
   .gold-text {
-    color: hsl(220 70% 22%);
+    color: hsl(158 78% 17%);
     font-weight: 700;
   }
 
   .emerald-text {
-    color: hsl(220 65% 32%);
+    color: hsl(160 80% 26%);
     font-weight: 600;
   }
 
@@ -206,11 +206,11 @@ All colors MUST be HSL.
   }
 
   .glow-gold {
-    box-shadow: 0 4px 12px hsl(220 70% 22% / 0.14), 0 8px 24px hsl(220 60% 30% / 0.08);
+    box-shadow: 0 4px 12px hsl(158 78% 17% / 0.14), 0 8px 24px hsl(160 80% 26% / 0.08);
   }
 
   .glow-emerald {
-    box-shadow: 0 4px 12px hsl(220 70% 22% / 0.14), 0 8px 24px hsl(220 60% 30% / 0.08);
+    box-shadow: 0 4px 12px hsl(158 78% 17% / 0.14), 0 8px 24px hsl(160 80% 26% / 0.08);
   }
 
   /* Floating particles container */
