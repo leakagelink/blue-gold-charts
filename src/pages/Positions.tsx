@@ -1051,165 +1051,195 @@ const Positions = () => {
     }
   };
 
-  const PositionCard = ({ position, showCloseButton = false }: { position: Position; showCloseButton?: boolean }) => {
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const PositionCard = ({ position, showCloseButton = false, selectable = false }: { position: Position; showCloseButton?: boolean; selectable?: boolean }) => {
     const pnl = calculatePnL(position);
     const isProfit = pnl >= 0;
     const isLong = position.position_type === 'long';
     const priceChange = priceChanges[position.id];
     const isClosing = closingPositionId === position.id;
     const isClosedSuccess = closedSuccessId === position.id;
+    const isSelected = selectedIds.has(position.id);
+    const sideLabel = isLong ? 'BUY' : 'SELL';
+    const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
+    const entry = formatMarketPrice(position.entry_price);
+    const exit = formatMarketPrice(position.status === 'closed' ? (position.close_price ?? position.current_price) : position.current_price);
+    const lot = (position.amount ?? 0) >= 1 ? Number(position.amount).toFixed(2) : Number(position.amount).toFixed(4);
 
     return (
-      <Card className={`p-4 hover:shadow-lg transition-all duration-300 relative overflow-hidden ${
-        isClosedSuccess ? 'scale-95 opacity-0 bg-green-500/20 border-green-500' : ''
-      } ${isClosing ? 'opacity-70' : ''}`}>
-        {/* Success overlay animation */}
+      <div
+        className={`relative px-3 py-3 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
+          isClosedSuccess ? 'scale-95 opacity-0' : ''
+        } ${isClosing ? 'opacity-60' : ''} ${isSelected ? 'bg-primary/[0.04]' : 'bg-card hover:bg-muted/30'}`}
+      >
         {isClosedSuccess && (
-          <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 z-10 animate-fade-in">
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="h-12 w-12 text-green-500 animate-scale-in" />
-              <span className="text-green-500 font-bold text-lg">Position Closed!</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 z-10 animate-fade-in rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-xl border border-emerald-500/40 shadow-sm">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 animate-scale-in" />
+              <span className="text-emerald-600 font-bold text-sm">Closed!</span>
             </div>
           </div>
         )}
-        
-        {/* Loading overlay */}
         {isClosing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10 rounded-lg">
+            <Loader2 className="h-5 w-5 text-primary animate-spin" />
           </div>
         )}
-        
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-              isLong ? 'bg-green-500/20' : 'bg-red-500/20'
-            }`}>
-              {isLong ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">{position.symbol}/USDT</h3>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-sm font-semibold ${isLong ? 'text-green-500' : 'text-red-500'}`}>
-                  {position.position_type === 'long' ? 'BUY' : 'SELL'}
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                  {position.leverage}x Leverage
-                </span>
-              </div>
-            </div>
-          </div>
-          {showCloseButton && !isClosing && !isClosedSuccess && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setClosePositionId(position.id)}
-              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+
+        <div className="flex items-center gap-3">
+          {/* Checkbox */}
+          {selectable && (
+            <button
+              onClick={() => toggleSelected(position.id)}
+              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                isSelected
+                  ? 'bg-[hsl(var(--gold))] border-[hsl(var(--gold))] text-gold-foreground'
+                  : 'bg-card border-border hover:border-[hsl(var(--gold))]'
+              }`}
+              aria-label={isSelected ? 'Deselect' : 'Select'}
             >
-              <X className="h-5 w-5" />
-            </Button>
+              {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={3} />}
+            </button>
           )}
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-muted-foreground">Amount</p>
-            <p className="font-semibold">{position.amount} {position.symbol}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Entry Price</p>
-            <p className="font-semibold">${formatMarketPrice(position.entry_price)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">{position.status === 'closed' ? 'Close Price' : 'Current Price'}</p>
-            <div className={`flex items-center gap-1 font-semibold transition-all duration-300 ${
-              position.status !== 'closed' && priceChange?.flash 
-                ? priceChange.direction === 'up' 
-                  ? 'text-green-500 animate-pulse' 
-                  : 'text-red-500 animate-pulse'
-                : ''
-            }`}>
-              <span className={`px-2 py-1 rounded transition-all duration-300 ${
-                position.status !== 'closed' && priceChange?.flash
-                  ? priceChange.direction === 'up'
-                    ? 'bg-green-500/20'
-                    : 'bg-red-500/20'
-                  : ''
-              }`}>
-                ${formatMarketPrice(position.status === 'closed' ? (position.close_price ?? position.current_price) : position.current_price)}
+          {/* Symbol + prices */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight truncate">
+                {position.symbol}
+              </h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>
+                {sideLabel}
               </span>
-              {position.status !== 'closed' && priceChange?.direction === 'up' && (
-                <ArrowUp className="h-4 w-4 text-green-500" />
-              )}
-              {position.status !== 'closed' && priceChange?.direction === 'down' && (
-                <ArrowDown className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Margin</p>
-            <p className="font-semibold">${position.margin.toFixed(2)}</p>
-          </div>
-          {(position.stop_loss || position.take_profit) && (
-            <div className="col-span-2 grid grid-cols-2 gap-2">
-              {position.stop_loss && (
-                <div>
-                  <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    Stop Loss
-                  </p>
-                  <p className="font-semibold text-red-500">${formatMarketPrice(position.stop_loss)}</p>
-                </div>
-              )}
-              {position.take_profit && (
-                <div>
-                  <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Take Profit
-                  </p>
-                  <p className="font-semibold text-green-500">${formatMarketPrice(position.take_profit)}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className={`mt-4 p-3 rounded-lg transition-all duration-300 ${
-          priceChange?.flash
-            ? priceChange.direction === 'up'
-              ? 'bg-green-500/20 animate-pulse'
-              : 'bg-red-500/20 animate-pulse'
-            : isProfit ? 'bg-green-500/10' : 'bg-red-500/10'
-        }`}>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">PnL</span>
-            <div className="flex items-center gap-1">
-              <span className={`text-lg font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
-                {isProfit ? '+' : ''}${formatLivePnl(pnl)}
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">
+                {position.leverage}x
               </span>
-              {priceChange?.direction === 'up' && (
-                <ArrowUp className="h-4 w-4 text-green-500" />
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+              <span>{entry}</span>
+              {isLong ? (
+                <ArrowUp className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
+              ) : (
+                <ArrowDown className="h-3 w-3 text-red-500" strokeWidth={2.5} />
               )}
-              {priceChange?.direction === 'down' && (
-                <ArrowDown className="h-4 w-4 text-red-500" />
-              )}
+              <span
+                className={`transition-all px-1 rounded ${
+                  position.status !== 'closed' && priceChange?.flash
+                    ? priceChange.direction === 'up'
+                      ? 'bg-emerald-500/15 text-emerald-600'
+                      : 'bg-red-500/15 text-red-500'
+                    : ''
+                }`}
+              >
+                {exit}
+              </span>
             </div>
           </div>
-        </div>
 
-        <div className="mt-3 text-xs text-muted-foreground">
-          <p>Opened: {new Date(position.opened_at).toLocaleString()}</p>
-          {position.closed_at && (
-            <p>Closed: {new Date(position.closed_at).toLocaleString()}</p>
+          {/* Lot */}
+          <div className="text-center shrink-0 min-w-[44px]">
+            <p className="text-sm font-bold text-primary tabular-nums">{lot}</p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Lot</p>
+          </div>
+
+          {/* PnL */}
+          <div className="text-right shrink-0 min-w-[80px]">
+            <p className={`text-base sm:text-lg font-bold tabular-nums ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
+              {isProfit ? '+' : ''}{formatLivePnl(pnl)}
+            </p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              ${position.margin.toFixed(0)} margin
+            </p>
+          </div>
+
+          {/* Close button (single) */}
+          {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
+            <button
+              onClick={() => setClosePositionId(position.id)}
+              className="shrink-0 w-8 h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
+              aria-label="Close position"
+            >
+              <X className="h-4 w-4" strokeWidth={2.5} />
+            </button>
           )}
         </div>
-      </Card>
+
+        {/* SL/TP strip */}
+        {(position.stop_loss || position.take_profit) && (
+          <div className="flex items-center gap-3 mt-2 pl-9 text-[10px] font-medium">
+            {position.stop_loss && (
+              <span className="flex items-center gap-1 text-red-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                SL ${formatMarketPrice(position.stop_loss)}
+              </span>
+            )}
+            {position.take_profit && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                TP ${formatMarketPrice(position.take_profit)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     );
   };
+
+  const PendingOrderRow = ({ order }: { order: any }) => {
+    const isLong = order.position_type === 'long';
+    const sideLabel = isLong ? 'BUY' : 'SELL';
+    const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
+    return (
+      <div className="px-3 py-3 sm:px-4 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight">{order.symbol}</h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">{order.leverage}x</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">
+              Limit @ {formatMarketPrice(order.limit_price)}
+            </p>
+          </div>
+          <div className="text-center shrink-0 min-w-[44px]">
+            <p className="text-sm font-bold text-primary tabular-nums">
+              {order.lot_size ? Number(order.lot_size).toFixed(2) : Number(order.amount ?? 0).toFixed(2)}
+            </p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              {order.lot_size ? 'Lot' : 'Amt'}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <span className="text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-2 py-1 rounded-md">
+              Pending
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleBulkClose = async () => {
+    const targets = openPositions.filter(p => selectedIds.has(p.id));
+    if (targets.length === 0) return;
+    setBulkClosing(true);
+    for (const p of targets) {
+      // eslint-disable-next-line no-await-in-loop
+      await handleClosePosition(p);
+    }
+    setSelectedIds(new Set());
+    setBulkClosing(false);
+  };
+
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-muted/40 to-background pb-20">
