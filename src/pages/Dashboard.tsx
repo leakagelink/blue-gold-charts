@@ -32,6 +32,28 @@ const Dashboard = () => {
   const [forexMomentumEnabled, setForexMomentumEnabled] = useState(true);
   const [commoditiesMomentumEnabled, setCommoditiesMomentumEnabled] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [activeMarketTab, setActiveMarketTab] = useState<string>("crypto");
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const marketTabs = ["crypto", ...(forexEnabled ? ["forex"] : []), ...(commoditiesEnabled ? ["commodities"] : [])];
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    const dy = e.changedTouches[0].clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    const idx = marketTabs.indexOf(activeMarketTab);
+    if (idx < 0) return;
+    if (dx < 0 && idx < marketTabs.length - 1) setActiveMarketTab(marketTabs[idx + 1]);
+    if (dx > 0 && idx > 0) setActiveMarketTab(marketTabs[idx - 1]);
+  };
 
   const fetchWalletBalance = async () => {
     if (!user) return;
