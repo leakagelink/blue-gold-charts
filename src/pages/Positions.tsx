@@ -3,13 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeForexData } from "@/lib/forexCache";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, TrendingUp, TrendingDown, X, RefreshCcw, ArrowUp, ArrowDown, CheckCircle2, Loader2, History, Search, Filter, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, X, RefreshCcw, ArrowUp, ArrowDown, CheckCircle2, Loader2, History, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -90,8 +87,13 @@ const Positions = () => {
   const { user } = useAuth();
   const [openPositions, setOpenPositions] = useState<Position[]>([]);
   const [closedPositions, setClosedPositions] = useState<Position[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"open" | "pending" | "closed">("open");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [closePositionId, setClosePositionId] = useState<string | null>(null);
+  const [bulkClosing, setBulkClosing] = useState(false);
   const [closingPositionId, setClosingPositionId] = useState<string | null>(null);
   const [closedSuccessId, setClosedSuccessId] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
@@ -769,11 +771,19 @@ const Positions = () => {
         .eq('status', 'closed')
         .order('closed_at', { ascending: false });
 
+      const { data: pending } = await supabase
+        .from('limit_orders')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'pending' as any)
+        .order('created_at', { ascending: false });
+
       if (openError) throw openError;
       if (closedError) throw closedError;
 
       setOpenPositions(open || []);
       setClosedPositions(closed || []);
+      setPendingOrders(pending || []);
     } catch (error) {
       console.error('Error fetching positions:', error);
       toast.error('Failed to load positions');
@@ -1038,183 +1048,255 @@ const Positions = () => {
     }
   };
 
-  const PositionCard = ({ position, showCloseButton = false }: { position: Position; showCloseButton?: boolean }) => {
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const PositionCard = ({ position, showCloseButton = false, selectable = false }: { position: Position; showCloseButton?: boolean; selectable?: boolean }) => {
     const pnl = calculatePnL(position);
     const isProfit = pnl >= 0;
     const isLong = position.position_type === 'long';
     const priceChange = priceChanges[position.id];
     const isClosing = closingPositionId === position.id;
     const isClosedSuccess = closedSuccessId === position.id;
+    const isSelected = selectedIds.has(position.id);
+    const sideLabel = isLong ? 'BUY' : 'SELL';
+    const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
+    const entry = formatMarketPrice(position.entry_price);
+    const exit = formatMarketPrice(position.status === 'closed' ? (position.close_price ?? position.current_price) : position.current_price);
+    const lot = (position.amount ?? 0) >= 1 ? Number(position.amount).toFixed(2) : Number(position.amount).toFixed(4);
 
     return (
-      <Card className={`p-4 hover:shadow-lg transition-all duration-300 relative overflow-hidden ${
-        isClosedSuccess ? 'scale-95 opacity-0 bg-green-500/20 border-green-500' : ''
-      } ${isClosing ? 'opacity-70' : ''}`}>
-        {/* Success overlay animation */}
+      <div
+        className={`relative px-3 py-3 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
+          isClosedSuccess ? 'scale-95 opacity-0' : ''
+        } ${isClosing ? 'opacity-60' : ''} ${isSelected ? 'bg-primary/[0.04]' : 'bg-card hover:bg-muted/30'}`}
+      >
         {isClosedSuccess && (
-          <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 z-10 animate-fade-in">
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="h-12 w-12 text-green-500 animate-scale-in" />
-              <span className="text-green-500 font-bold text-lg">Position Closed!</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 z-10 animate-fade-in rounded-lg">
+            <div className="flex items-center gap-2 px-3 py-2 bg-card rounded-xl border border-emerald-500/40 shadow-sm">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 animate-scale-in" />
+              <span className="text-emerald-600 font-bold text-sm">Closed!</span>
             </div>
           </div>
         )}
-        
-        {/* Loading overlay */}
         {isClosing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10 rounded-lg">
+            <Loader2 className="h-5 w-5 text-primary animate-spin" />
           </div>
         )}
-        
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-              isLong ? 'bg-green-500/20' : 'bg-red-500/20'
-            }`}>
-              {isLong ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">{position.symbol}/USDT</h3>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-sm font-semibold ${isLong ? 'text-green-500' : 'text-red-500'}`}>
-                  {position.position_type === 'long' ? 'BUY' : 'SELL'}
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                  {position.leverage}x Leverage
-                </span>
-              </div>
-            </div>
-          </div>
-          {showCloseButton && !isClosing && !isClosedSuccess && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setClosePositionId(position.id)}
-              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+
+        <div className="flex items-center gap-3">
+          {/* Checkbox */}
+          {selectable && (
+            <button
+              onClick={() => toggleSelected(position.id)}
+              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                isSelected
+                  ? 'bg-[hsl(var(--gold))] border-[hsl(var(--gold))] text-gold-foreground'
+                  : 'bg-card border-border hover:border-[hsl(var(--gold))]'
+              }`}
+              aria-label={isSelected ? 'Deselect' : 'Select'}
             >
-              <X className="h-5 w-5" />
-            </Button>
+              {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={3} />}
+            </button>
           )}
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-muted-foreground">Amount</p>
-            <p className="font-semibold">{position.amount} {position.symbol}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Entry Price</p>
-            <p className="font-semibold">${formatMarketPrice(position.entry_price)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">{position.status === 'closed' ? 'Close Price' : 'Current Price'}</p>
-            <div className={`flex items-center gap-1 font-semibold transition-all duration-300 ${
-              position.status !== 'closed' && priceChange?.flash 
-                ? priceChange.direction === 'up' 
-                  ? 'text-green-500 animate-pulse' 
-                  : 'text-red-500 animate-pulse'
-                : ''
-            }`}>
-              <span className={`px-2 py-1 rounded transition-all duration-300 ${
-                position.status !== 'closed' && priceChange?.flash
-                  ? priceChange.direction === 'up'
-                    ? 'bg-green-500/20'
-                    : 'bg-red-500/20'
-                  : ''
-              }`}>
-                ${formatMarketPrice(position.status === 'closed' ? (position.close_price ?? position.current_price) : position.current_price)}
+          {/* Symbol + prices */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight truncate">
+                {position.symbol}
+              </h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>
+                {sideLabel}
               </span>
-              {position.status !== 'closed' && priceChange?.direction === 'up' && (
-                <ArrowUp className="h-4 w-4 text-green-500" />
-              )}
-              {position.status !== 'closed' && priceChange?.direction === 'down' && (
-                <ArrowDown className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Margin</p>
-            <p className="font-semibold">${position.margin.toFixed(2)}</p>
-          </div>
-          {(position.stop_loss || position.take_profit) && (
-            <div className="col-span-2 grid grid-cols-2 gap-2">
-              {position.stop_loss && (
-                <div>
-                  <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    Stop Loss
-                  </p>
-                  <p className="font-semibold text-red-500">${formatMarketPrice(position.stop_loss)}</p>
-                </div>
-              )}
-              {position.take_profit && (
-                <div>
-                  <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Take Profit
-                  </p>
-                  <p className="font-semibold text-green-500">${formatMarketPrice(position.take_profit)}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className={`mt-4 p-3 rounded-lg transition-all duration-300 ${
-          priceChange?.flash
-            ? priceChange.direction === 'up'
-              ? 'bg-green-500/20 animate-pulse'
-              : 'bg-red-500/20 animate-pulse'
-            : isProfit ? 'bg-green-500/10' : 'bg-red-500/10'
-        }`}>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">PnL</span>
-            <div className="flex items-center gap-1">
-              <span className={`text-lg font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
-                {isProfit ? '+' : ''}${formatLivePnl(pnl)}
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">
+                {position.leverage}x
               </span>
-              {priceChange?.direction === 'up' && (
-                <ArrowUp className="h-4 w-4 text-green-500" />
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+              <span>{entry}</span>
+              {isLong ? (
+                <ArrowUp className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
+              ) : (
+                <ArrowDown className="h-3 w-3 text-red-500" strokeWidth={2.5} />
               )}
-              {priceChange?.direction === 'down' && (
-                <ArrowDown className="h-4 w-4 text-red-500" />
-              )}
+              <span
+                className={`transition-all px-1 rounded ${
+                  position.status !== 'closed' && priceChange?.flash
+                    ? priceChange.direction === 'up'
+                      ? 'bg-emerald-500/15 text-emerald-600'
+                      : 'bg-red-500/15 text-red-500'
+                    : ''
+                }`}
+              >
+                {exit}
+              </span>
             </div>
           </div>
-        </div>
 
-        <div className="mt-3 text-xs text-muted-foreground">
-          <p>Opened: {new Date(position.opened_at).toLocaleString()}</p>
-          {position.closed_at && (
-            <p>Closed: {new Date(position.closed_at).toLocaleString()}</p>
+          {/* Lot */}
+          <div className="text-center shrink-0 min-w-[44px]">
+            <p className="text-sm font-bold text-primary tabular-nums">{lot}</p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Lot</p>
+          </div>
+
+          {/* PnL */}
+          <div className="text-right shrink-0 min-w-[80px]">
+            <p className={`text-base sm:text-lg font-bold tabular-nums ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
+              {isProfit ? '+' : ''}{formatLivePnl(pnl)}
+            </p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              ${position.margin.toFixed(0)} margin
+            </p>
+          </div>
+
+          {/* Close button (single) */}
+          {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
+            <button
+              onClick={() => setClosePositionId(position.id)}
+              className="shrink-0 w-8 h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
+              aria-label="Close position"
+            >
+              <X className="h-4 w-4" strokeWidth={2.5} />
+            </button>
           )}
         </div>
-      </Card>
+
+        {/* SL/TP strip */}
+        {(position.stop_loss || position.take_profit) && (
+          <div className="flex items-center gap-3 mt-2 pl-9 text-[10px] font-medium">
+            {position.stop_loss && (
+              <span className="flex items-center gap-1 text-red-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                SL ${formatMarketPrice(position.stop_loss)}
+              </span>
+            )}
+            {position.take_profit && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                TP ${formatMarketPrice(position.take_profit)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     );
   };
 
-  return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-muted/40 to-background pb-20">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-accent/20 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-0 left-1/3 w-[450px] h-[450px] bg-secondary/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "2s" }} />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]" />
+  const PendingOrderRow = ({ order }: { order: any }) => {
+    const isLong = order.position_type === 'long';
+    const sideLabel = isLong ? 'BUY' : 'SELL';
+    const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
+    return (
+      <div className="px-3 py-3 sm:px-4 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight">{order.symbol}</h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
+              <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">{order.leverage}x</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground font-mono">
+              Limit @ {formatMarketPrice(order.limit_price)}
+            </p>
+          </div>
+          <div className="text-center shrink-0 min-w-[44px]">
+            <p className="text-sm font-bold text-primary tabular-nums">
+              {order.lot_size ? Number(order.lot_size).toFixed(2) : Number(order.amount ?? 0).toFixed(2)}
+            </p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              {order.lot_size ? 'Lot' : 'Amt'}
+            </p>
+          </div>
+          <div className="shrink-0">
+            <span className="text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-2 py-1 rounded-md">
+              Pending
+            </span>
+          </div>
+        </div>
       </div>
+    );
+  };
 
-      {/* Header — Magnetic Dock style */}
-      <header className="sticky top-0 z-50 h-20 backdrop-blur-md bg-background/80 border-b border-border/60">
+  const handleBulkClose = async () => {
+    const targets = openPositions.filter(p => selectedIds.has(p.id));
+    if (targets.length === 0) return;
+    setBulkClosing(true);
+    for (const p of targets) {
+      // eslint-disable-next-line no-await-in-loop
+      await handleClosePosition(p);
+    }
+    setSelectedIds(new Set());
+    setBulkClosing(false);
+  };
+
+
+
+  // Derived totals
+  const totalPnL = openPositions.reduce((sum, pos) => sum + calculatePnL(pos), 0);
+  const totalMargin = openPositions.reduce((sum, pos) => sum + pos.margin, 0);
+  const pnlPct = totalMargin > 0 ? (totalPnL / totalMargin) * 100 : 0;
+  const totalIsProfit = totalPnL >= 0;
+
+  const allSelected = openPositions.length > 0 && openPositions.every(p => selectedIds.has(p.id));
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(openPositions.map(p => p.id)));
+  };
+
+  // Closed-tab filtering
+  const now = Date.now();
+  const rangeMs: Record<string, number> = {
+    today: 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+    "90d": 90 * 24 * 60 * 60 * 1000,
+  };
+  const filteredClosed = closedPositions.filter((p) => {
+    if (historySearch && !p.symbol.toLowerCase().includes(historySearch.toLowerCase())) return false;
+    if (historyType !== "all" && p.position_type !== historyType) return false;
+    if (historyOutcome === "profit" && (p.pnl || 0) <= 0) return false;
+    if (historyOutcome === "loss" && (p.pnl || 0) >= 0) return false;
+    if (historyRange !== "all") {
+      const closedAt = p.closed_at ? new Date(p.closed_at).getTime() : new Date(p.opened_at).getTime();
+      if (now - closedAt > rangeMs[historyRange]) return false;
+    }
+    return true;
+  });
+  const sortedClosed = [...filteredClosed].sort((a, b) => {
+    const dir = historySortDir === "asc" ? 1 : -1;
+    if (historySortField === "date") {
+      const aTime = new Date(a.closed_at || a.opened_at).getTime();
+      const bTime = new Date(b.closed_at || b.opened_at).getTime();
+      return (aTime - bTime) * dir;
+    }
+    if (historySortField === "symbol") return a.symbol.localeCompare(b.symbol) * dir;
+    if (historySortField === "pnl") return ((Number(a.pnl) || 0) - (Number(b.pnl) || 0)) * dir;
+    return 0;
+  });
+  const netClosedPnl = filteredClosed.reduce((s, p) => s + (Number(p.pnl) || 0), 0);
+
+  const tabs: Array<{ id: "open" | "pending" | "closed"; label: string; count: number }> = [
+    { id: "open", label: "Position", count: openPositions.length },
+    { id: "pending", label: "Pending Order", count: pendingOrders.length },
+    { id: "closed", label: "Closed", count: closedPositions.length },
+  ];
+
+  return (
+    <div className="min-h-screen relative bg-background pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-50 h-16 bg-background border-b border-border">
         <div className="relative h-full flex items-center justify-between px-4 sm:px-5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all duration-300"
+            className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all"
             onClick={() => navigate("/dashboard")}
             aria-label="Back"
           >
@@ -1226,7 +1308,7 @@ const Positions = () => {
           <button
             onClick={fetchPositions}
             disabled={loading}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 hover:scale-105 active:scale-95 transition-all duration-300 text-[hsl(var(--gold))] disabled:opacity-50"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 active:scale-95 transition-all text-[hsl(var(--gold))] disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={2.5} />
@@ -1234,309 +1316,236 @@ const Positions = () => {
         </div>
       </header>
 
-      <main className="relative z-10 container mx-auto p-3 sm:p-4 animate-fade-in">
-        {/* Total Portfolio P&L Card - Sticky */}
-        {openPositions.length > 0 && (() => {
-          const totalPnL = openPositions.reduce((sum, pos) => sum + calculatePnL(pos), 0);
-          const isProfit = totalPnL >= 0;
-          const totalMargin = openPositions.reduce((sum, pos) => sum + pos.margin, 0);
-          const pnlPercentage = totalMargin > 0 ? (totalPnL / totalMargin) * 100 : 0;
-
-          return (
-            <div className="sticky top-16 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-4 pt-2 backdrop-blur-2xl bg-background/70 border-b border-border/30">
-              <Card className={`relative overflow-hidden p-4 sm:p-6 border-2 backdrop-blur-xl ${isProfit ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-red-500/5 border-red-500/30'} shadow-xl`}>
-                <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${isProfit ? 'bg-emerald-500/20' : 'bg-red-500/20'}`} />
-                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total Portfolio P&L</h3>
-                    <div className="flex flex-wrap items-baseline gap-1 sm:gap-2">
-                      <p className={`text-2xl sm:text-3xl md:text-4xl font-bold ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {isProfit ? '+' : ''}${totalPnL.toFixed(2)}
-                      </p>
-                      <span className={`text-sm sm:text-lg font-semibold ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
-                        ({isProfit ? '+' : ''}{pnlPercentage.toFixed(2)}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right flex-shrink-0">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Total Margin</p>
-                    <p className="text-lg sm:text-xl font-bold">${totalMargin.toFixed(2)}</p>
-                  </div>
-                </div>
-                <div className="relative mt-4 pt-4 border-t border-border/40">
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-2 rounded-xl bg-muted/30">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Open</p>
-                      <p className="text-lg font-bold">{openPositions.length}</p>
-                    </div>
-                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Buy</p>
-                      <p className="text-lg font-bold text-emerald-500">
-                        {openPositions.filter(p => p.position_type === 'long').length}
-                      </p>
-                    </div>
-                    <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Sell</p>
-                      <p className="text-lg font-bold text-red-500">
-                        {openPositions.filter(p => p.position_type === 'short').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+      <main className="relative z-10 animate-fade-in">
+        {/* Compact portfolio strip (open tab only) */}
+        {activeTab === "open" && openPositions.length > 0 && (
+          <div className="px-4 py-3 bg-card border-b border-border flex items-center justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Floating P&L</p>
+              <p className={`text-xl font-bold tabular-nums ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
+                {totalIsProfit ? "+" : ""}${totalPnL.toFixed(2)}
+                <span className="ml-1.5 text-xs font-semibold">
+                  ({totalIsProfit ? "+" : ""}{pnlPct.toFixed(2)}%)
+                </span>
+              </p>
             </div>
-          );
-        })()}
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Margin</p>
+              <p className="text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
+            </div>
+          </div>
+        )}
 
-        <Tabs defaultValue="open" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1.5 bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl shadow-lg">
-            <TabsTrigger
-              value="open"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              Open ({openPositions.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="closed"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              Closed ({closedPositions.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              <History className="h-3.5 w-3.5 mr-1.5 inline" />
-              History
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="open" className="space-y-4">
-            {openPositions.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">No open positions</p>
-                <Button 
-                  className="mt-4" 
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Start Trading
-                </Button>
-              </Card>
-            ) : (
-              openPositions.map(position => (
-                <PositionCard 
-                  key={position.id} 
-                  position={position} 
-                  showCloseButton={true}
-                />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="closed" className="space-y-4">
-            {closedPositions.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">No closed positions</p>
-              </Card>
-            ) : (
-              closedPositions.map(position => (
-                <PositionCard key={position.id} position={position} />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            {(() => {
-              const now = Date.now();
-              const rangeMs: Record<string, number> = {
-                today: 24 * 60 * 60 * 1000,
-                "7d": 7 * 24 * 60 * 60 * 1000,
-                "30d": 30 * 24 * 60 * 60 * 1000,
-                "90d": 90 * 24 * 60 * 60 * 1000,
-              };
-              const filtered = closedPositions.filter((p) => {
-                if (historySearch && !p.symbol.toLowerCase().includes(historySearch.toLowerCase())) return false;
-                if (historyType !== "all" && p.position_type !== historyType) return false;
-                if (historyOutcome === "profit" && (p.pnl || 0) <= 0) return false;
-                if (historyOutcome === "loss" && (p.pnl || 0) >= 0) return false;
-                if (historyRange !== "all") {
-                  const closedAt = p.closed_at ? new Date(p.closed_at).getTime() : new Date(p.opened_at).getTime();
-                  if (now - closedAt > rangeMs[historyRange]) return false;
-                }
-                return true;
-              });
-
-              const sorted = [...filtered].sort((a, b) => {
-                const dir = historySortDir === "asc" ? 1 : -1;
-                if (historySortField === "date") {
-                  const aTime = new Date(a.closed_at || a.opened_at).getTime();
-                  const bTime = new Date(b.closed_at || b.opened_at).getTime();
-                  return (aTime - bTime) * dir;
-                }
-                if (historySortField === "symbol") {
-                  return a.symbol.localeCompare(b.symbol) * dir;
-                }
-                if (historySortField === "pnl") {
-                  return ((Number(a.pnl) || 0) - (Number(b.pnl) || 0)) * dir;
-                }
-                return 0;
-              });
-
-              const totalPnl = filtered.reduce((s, p) => s + (Number(p.pnl) || 0), 0);
-              const wins = filtered.filter((p) => (p.pnl || 0) > 0).length;
-              const losses = filtered.filter((p) => (p.pnl || 0) < 0).length;
-              const winRate = filtered.length > 0 ? ((wins / filtered.length) * 100).toFixed(1) : "0.0";
-
-              const toggleSort = (field: "date" | "symbol" | "pnl") => {
-                if (historySortField === field) {
-                  setHistorySortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-                } else {
-                  setHistorySortField(field);
-                  setHistorySortDir(field === "date" ? "desc" : "asc");
-                }
-              };
-
-              const SortButton = ({
-                field,
-                label,
-              }: {
-                field: "date" | "symbol" | "pnl";
-                label: string;
-              }) => (
+        {/* Tabs - clean underline style */}
+        <div className="sticky top-16 z-40 bg-background border-b border-border">
+          <div className="flex items-center px-3">
+            {tabs.map((t) => {
+              const active = activeTab === t.id;
+              return (
                 <button
-                  onClick={() => toggleSort(field)}
-                  className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg transition-all ${
-                    historySortField === field
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTab(t.id);
+                    setSelectedIds(new Set());
+                  }}
+                  className={`relative flex-1 py-3 text-sm font-bold tracking-tight transition-colors ${
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {label}
-                  {historySortField === field ? (
-                    historySortDir === "asc" ? (
-                      <ArrowUp className="h-3 w-3" />
-                    ) : (
-                      <ArrowDown className="h-3 w-3" />
-                    )
-                  ) : (
-                    <ArrowUpDown className="h-3 w-3 opacity-50" />
+                  {t.label}
+                  {t.count > 0 && (
+                    <span className={`ml-1 text-xs font-bold ${active ? "text-primary" : "text-muted-foreground"}`}>
+                      ({t.count})
+                    </span>
+                  )}
+                  {active && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-10 rounded-full bg-[hsl(var(--gold))]" />
                   )}
                 </button>
               );
+            })}
+          </div>
+        </div>
 
-              return (
-                <>
-                  {/* Filter Bar */}
-                  <Card className="p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Filter className="h-4 w-4 text-primary" />
-                      <span>Filters</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search symbol..."
-                          value={historySearch}
-                          onChange={(e) => setHistorySearch(e.target.value)}
-                          className="pl-9"
-                        />
-                      </div>
-                      <Select value={historyType} onValueChange={(v: any) => setHistoryType(v)}>
-                        <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Types</SelectItem>
-                          <SelectItem value="long">Buy Only</SelectItem>
-                          <SelectItem value="short">Sell Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={historyOutcome} onValueChange={(v: any) => setHistoryOutcome(v)}>
-                        <SelectTrigger><SelectValue placeholder="Outcome" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Outcomes</SelectItem>
-                          <SelectItem value="profit">Profit</SelectItem>
-                          <SelectItem value="loss">Loss</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={historyRange} onValueChange={(v: any) => setHistoryRange(v)}>
-                        <SelectTrigger><SelectValue placeholder="Date Range" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Time</SelectItem>
-                          <SelectItem value="today">Last 24 Hours</SelectItem>
-                          <SelectItem value="7d">Last 7 Days</SelectItem>
-                          <SelectItem value="30d">Last 30 Days</SelectItem>
-                          <SelectItem value="90d">Last 90 Days</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {/* Sort Controls */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground font-medium">Sort by:</span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <SortButton field="date" label="Date" />
-                        <SortButton field="symbol" label="Symbol" />
-                        <SortButton field="pnl" label="Net P&L" />
-                      </div>
-                    </div>
-                    {(historySearch || historyType !== "all" || historyOutcome !== "all" || historyRange !== "all") && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setHistorySearch("");
-                          setHistoryType("all");
-                          setHistoryOutcome("all");
-                          setHistoryRange("all");
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" /> Clear filters
-                      </Button>
-                    )}
-                  </Card>
+        {/* Section toolbar */}
+        {activeTab === "open" && openPositions.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-2.5 text-xs bg-muted/30 border-b border-border">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wide">All orders</span>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors font-semibold"
+              >
+                <X className="h-3.5 w-3.5" /> Cancel
+              </button>
+            )}
+          </div>
+        )}
 
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Total Trades</p>
-                      <p className="text-xl font-bold">{filtered.length}</p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Net P&L</p>
-                      <p className={`text-xl font-bold ${totalPnl >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
-                      </p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Win / Loss</p>
-                      <p className="text-xl font-bold">
-                        <span className="text-green-600">{wins}</span>
-                        <span className="text-muted-foreground"> / </span>
-                        <span className="text-red-600">{losses}</span>
-                      </p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Win Rate</p>
-                      <p className="text-xl font-bold text-primary">{winRate}%</p>
-                    </Card>
+        {/* Open Positions */}
+        {activeTab === "open" && (
+          <div>
+            {openPositions.length === 0 ? (
+              <div className="p-10 text-center">
+                <p className="text-muted-foreground text-sm">No open positions</p>
+                <Button className="mt-4" onClick={() => navigate("/dashboard")}>
+                  Start Trading
+                </Button>
+              </div>
+            ) : (
+              openPositions.map(position => (
+                <PositionCard
+                  key={position.id}
+                  position={position}
+                  showCloseButton={true}
+                  selectable={true}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Pending Orders */}
+        {activeTab === "pending" && (
+          <div>
+            {pendingOrders.length === 0 ? (
+              <div className="p-10 text-center">
+                <p className="text-muted-foreground text-sm">No pending orders</p>
+              </div>
+            ) : (
+              pendingOrders.map(order => <PendingOrderRow key={order.id} order={order} />)
+            )}
+          </div>
+        )}
+
+        {/* Closed (with filters) */}
+        {activeTab === "closed" && (
+          <div>
+            {/* Filter toggle bar */}
+            <div className="flex items-center justify-between px-4 py-2.5 text-xs bg-muted/30 border-b border-border">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wide">
+                {filteredClosed.length} trade{filteredClosed.length !== 1 ? "s" : ""}
+                {filteredClosed.length > 0 && (
+                  <span className={`ml-2 ${netClosedPnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                    Net {netClosedPnl >= 0 ? "+" : ""}${netClosedPnl.toFixed(2)}
+                  </span>
+                )}
+              </span>
+              <button
+                onClick={() => setShowFilters(v => !v)}
+                className={`flex items-center gap-1 font-bold transition-colors ${
+                  showFilters ? "text-[hsl(var(--gold))]" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Filter className="h-3.5 w-3.5" /> Filters
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="p-4 space-y-3 bg-card border-b border-border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search symbol..."
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      className="pl-9 h-9"
+                    />
                   </div>
+                  <Select value={historyType} onValueChange={(v: any) => setHistoryType(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="long">Buy Only</SelectItem>
+                      <SelectItem value="short">Sell Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyOutcome} onValueChange={(v: any) => setHistoryOutcome(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Outcome" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Outcomes</SelectItem>
+                      <SelectItem value="profit">Profit</SelectItem>
+                      <SelectItem value="loss">Loss</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyRange} onValueChange={(v: any) => setHistoryRange(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Date Range" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="today">Last 24 Hours</SelectItem>
+                      <SelectItem value="7d">Last 7 Days</SelectItem>
+                      <SelectItem value="30d">Last 30 Days</SelectItem>
+                      <SelectItem value="90d">Last 90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(historySearch || historyType !== "all" || historyOutcome !== "all" || historyRange !== "all") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setHistorySearch("");
+                      setHistoryType("all");
+                      setHistoryOutcome("all");
+                      setHistoryRange("all");
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear filters
+                  </Button>
+                )}
+              </div>
+            )}
 
-                  {/* Results */}
-                  {sorted.length === 0 ? (
-                    <Card className="p-8 text-center">
-                      <History className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                      <p className="text-muted-foreground">No trades match your filters</p>
-                    </Card>
-                  ) : (
-                    sorted.map((position) => (
-                      <PositionCard key={position.id} position={position} />
-                    ))
-                  )}
-                </>
-              );
-            })()}
-          </TabsContent>
-        </Tabs>
+            {sortedClosed.length === 0 ? (
+              <div className="p-10 text-center">
+                <History className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">No closed trades</p>
+              </div>
+            ) : (
+              sortedClosed.map(position => <PositionCard key={position.id} position={position} />)
+            )}
+          </div>
+        )}
       </main>
+
+      {/* Sticky action bar (above BottomNav) — Position tab only */}
+      {activeTab === "open" && openPositions.length > 0 && (
+        <div className="fixed bottom-20 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-4px_20px_-8px_hsl(220_30%_20%/0.15)]">
+          <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+            <button
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-sm font-bold text-primary px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
+            >
+              <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                allSelected ? "bg-[hsl(var(--gold))] border-[hsl(var(--gold))]" : "border-border bg-card"
+              }`}>
+                {allSelected && <CheckCircle2 className="h-3 w-3 text-gold-foreground" strokeWidth={3} />}
+              </span>
+              Select All
+            </button>
+
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              className="flex items-center gap-1.5 text-sm font-bold text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Filter className="h-4 w-4" /> Custom
+            </button>
+
+            <button
+              onClick={handleBulkClose}
+              disabled={selectedIds.size === 0 || bulkClosing}
+              className="h-10 px-6 rounded-full bg-[hsl(var(--gold))] text-gold-foreground font-bold text-sm shadow-sm hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            >
+              {bulkClosing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>Close{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Close Position Confirmation Dialog */}
       <AlertDialog open={!!closePositionId} onOpenChange={() => setClosePositionId(null)}>
@@ -1565,6 +1574,7 @@ const Positions = () => {
       <BottomNav />
     </div>
   );
+
 };
 
 export default Positions;
