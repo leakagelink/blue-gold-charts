@@ -1241,23 +1241,65 @@ const Positions = () => {
 
 
 
-  return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-muted/40 to-background pb-20">
-      {/* Animated Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-accent/20 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-0 left-1/3 w-[450px] h-[450px] bg-secondary/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "2s" }} />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]" />
-      </div>
+  // Derived totals
+  const totalPnL = openPositions.reduce((sum, pos) => sum + calculatePnL(pos), 0);
+  const totalMargin = openPositions.reduce((sum, pos) => sum + pos.margin, 0);
+  const pnlPct = totalMargin > 0 ? (totalPnL / totalMargin) * 100 : 0;
+  const totalIsProfit = totalPnL >= 0;
 
-      {/* Header — Magnetic Dock style */}
-      <header className="sticky top-0 z-50 h-20 backdrop-blur-md bg-background/80 border-b border-border/60">
+  const allSelected = openPositions.length > 0 && openPositions.every(p => selectedIds.has(p.id));
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(openPositions.map(p => p.id)));
+  };
+
+  // Closed-tab filtering
+  const now = Date.now();
+  const rangeMs: Record<string, number> = {
+    today: 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000,
+    "90d": 90 * 24 * 60 * 60 * 1000,
+  };
+  const filteredClosed = closedPositions.filter((p) => {
+    if (historySearch && !p.symbol.toLowerCase().includes(historySearch.toLowerCase())) return false;
+    if (historyType !== "all" && p.position_type !== historyType) return false;
+    if (historyOutcome === "profit" && (p.pnl || 0) <= 0) return false;
+    if (historyOutcome === "loss" && (p.pnl || 0) >= 0) return false;
+    if (historyRange !== "all") {
+      const closedAt = p.closed_at ? new Date(p.closed_at).getTime() : new Date(p.opened_at).getTime();
+      if (now - closedAt > rangeMs[historyRange]) return false;
+    }
+    return true;
+  });
+  const sortedClosed = [...filteredClosed].sort((a, b) => {
+    const dir = historySortDir === "asc" ? 1 : -1;
+    if (historySortField === "date") {
+      const aTime = new Date(a.closed_at || a.opened_at).getTime();
+      const bTime = new Date(b.closed_at || b.opened_at).getTime();
+      return (aTime - bTime) * dir;
+    }
+    if (historySortField === "symbol") return a.symbol.localeCompare(b.symbol) * dir;
+    if (historySortField === "pnl") return ((Number(a.pnl) || 0) - (Number(b.pnl) || 0)) * dir;
+    return 0;
+  });
+  const netClosedPnl = filteredClosed.reduce((s, p) => s + (Number(p.pnl) || 0), 0);
+
+  const tabs: Array<{ id: "open" | "pending" | "closed"; label: string; count: number }> = [
+    { id: "open", label: "Position", count: openPositions.length },
+    { id: "pending", label: "Pending Order", count: pendingOrders.length },
+    { id: "closed", label: "Closed", count: closedPositions.length },
+  ];
+
+  return (
+    <div className="min-h-screen relative bg-background pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-50 h-16 bg-background border-b border-border">
         <div className="relative h-full flex items-center justify-between px-4 sm:px-5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all duration-300"
+            className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all"
             onClick={() => navigate("/dashboard")}
             aria-label="Back"
           >
@@ -1269,7 +1311,7 @@ const Positions = () => {
           <button
             onClick={fetchPositions}
             disabled={loading}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 hover:scale-105 active:scale-95 transition-all duration-300 text-[hsl(var(--gold))] disabled:opacity-50"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 active:scale-95 transition-all text-[hsl(var(--gold))] disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={2.5} />
@@ -1277,309 +1319,236 @@ const Positions = () => {
         </div>
       </header>
 
-      <main className="relative z-10 container mx-auto p-3 sm:p-4 animate-fade-in">
-        {/* Total Portfolio P&L Card - Sticky */}
-        {openPositions.length > 0 && (() => {
-          const totalPnL = openPositions.reduce((sum, pos) => sum + calculatePnL(pos), 0);
-          const isProfit = totalPnL >= 0;
-          const totalMargin = openPositions.reduce((sum, pos) => sum + pos.margin, 0);
-          const pnlPercentage = totalMargin > 0 ? (totalPnL / totalMargin) * 100 : 0;
-
-          return (
-            <div className="sticky top-16 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-4 pt-2 backdrop-blur-2xl bg-background/70 border-b border-border/30">
-              <Card className={`relative overflow-hidden p-4 sm:p-6 border-2 backdrop-blur-xl ${isProfit ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-red-500/5 border-red-500/30'} shadow-xl`}>
-                <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${isProfit ? 'bg-emerald-500/20' : 'bg-red-500/20'}`} />
-                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Total Portfolio P&L</h3>
-                    <div className="flex flex-wrap items-baseline gap-1 sm:gap-2">
-                      <p className={`text-2xl sm:text-3xl md:text-4xl font-bold ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {isProfit ? '+' : ''}${totalPnL.toFixed(2)}
-                      </p>
-                      <span className={`text-sm sm:text-lg font-semibold ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
-                        ({isProfit ? '+' : ''}{pnlPercentage.toFixed(2)}%)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right flex-shrink-0">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Total Margin</p>
-                    <p className="text-lg sm:text-xl font-bold">${totalMargin.toFixed(2)}</p>
-                  </div>
-                </div>
-                <div className="relative mt-4 pt-4 border-t border-border/40">
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-2 rounded-xl bg-muted/30">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Open</p>
-                      <p className="text-lg font-bold">{openPositions.length}</p>
-                    </div>
-                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Buy</p>
-                      <p className="text-lg font-bold text-emerald-500">
-                        {openPositions.filter(p => p.position_type === 'long').length}
-                      </p>
-                    </div>
-                    <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 font-semibold">Sell</p>
-                      <p className="text-lg font-bold text-red-500">
-                        {openPositions.filter(p => p.position_type === 'short').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+      <main className="relative z-10 animate-fade-in">
+        {/* Compact portfolio strip (open tab only) */}
+        {activeTab === "open" && openPositions.length > 0 && (
+          <div className="px-4 py-3 bg-card border-b border-border flex items-center justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Floating P&L</p>
+              <p className={`text-xl font-bold tabular-nums ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
+                {totalIsProfit ? "+" : ""}${totalPnL.toFixed(2)}
+                <span className="ml-1.5 text-xs font-semibold">
+                  ({totalIsProfit ? "+" : ""}{pnlPct.toFixed(2)}%)
+                </span>
+              </p>
             </div>
-          );
-        })()}
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Margin</p>
+              <p className="text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
+            </div>
+          </div>
+        )}
 
-        <Tabs defaultValue="open" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1.5 bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl shadow-lg">
-            <TabsTrigger
-              value="open"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              Open ({openPositions.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="closed"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              Closed ({closedPositions.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="text-xs sm:text-sm py-2.5 sm:py-3 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:via-secondary data-[state=active]:to-accent data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] font-semibold transition-all duration-300"
-            >
-              <History className="h-3.5 w-3.5 mr-1.5 inline" />
-              History
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="open" className="space-y-4">
-            {openPositions.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">No open positions</p>
-                <Button 
-                  className="mt-4" 
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Start Trading
-                </Button>
-              </Card>
-            ) : (
-              openPositions.map(position => (
-                <PositionCard 
-                  key={position.id} 
-                  position={position} 
-                  showCloseButton={true}
-                />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="closed" className="space-y-4">
-            {closedPositions.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">No closed positions</p>
-              </Card>
-            ) : (
-              closedPositions.map(position => (
-                <PositionCard key={position.id} position={position} />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            {(() => {
-              const now = Date.now();
-              const rangeMs: Record<string, number> = {
-                today: 24 * 60 * 60 * 1000,
-                "7d": 7 * 24 * 60 * 60 * 1000,
-                "30d": 30 * 24 * 60 * 60 * 1000,
-                "90d": 90 * 24 * 60 * 60 * 1000,
-              };
-              const filtered = closedPositions.filter((p) => {
-                if (historySearch && !p.symbol.toLowerCase().includes(historySearch.toLowerCase())) return false;
-                if (historyType !== "all" && p.position_type !== historyType) return false;
-                if (historyOutcome === "profit" && (p.pnl || 0) <= 0) return false;
-                if (historyOutcome === "loss" && (p.pnl || 0) >= 0) return false;
-                if (historyRange !== "all") {
-                  const closedAt = p.closed_at ? new Date(p.closed_at).getTime() : new Date(p.opened_at).getTime();
-                  if (now - closedAt > rangeMs[historyRange]) return false;
-                }
-                return true;
-              });
-
-              const sorted = [...filtered].sort((a, b) => {
-                const dir = historySortDir === "asc" ? 1 : -1;
-                if (historySortField === "date") {
-                  const aTime = new Date(a.closed_at || a.opened_at).getTime();
-                  const bTime = new Date(b.closed_at || b.opened_at).getTime();
-                  return (aTime - bTime) * dir;
-                }
-                if (historySortField === "symbol") {
-                  return a.symbol.localeCompare(b.symbol) * dir;
-                }
-                if (historySortField === "pnl") {
-                  return ((Number(a.pnl) || 0) - (Number(b.pnl) || 0)) * dir;
-                }
-                return 0;
-              });
-
-              const totalPnl = filtered.reduce((s, p) => s + (Number(p.pnl) || 0), 0);
-              const wins = filtered.filter((p) => (p.pnl || 0) > 0).length;
-              const losses = filtered.filter((p) => (p.pnl || 0) < 0).length;
-              const winRate = filtered.length > 0 ? ((wins / filtered.length) * 100).toFixed(1) : "0.0";
-
-              const toggleSort = (field: "date" | "symbol" | "pnl") => {
-                if (historySortField === field) {
-                  setHistorySortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-                } else {
-                  setHistorySortField(field);
-                  setHistorySortDir(field === "date" ? "desc" : "asc");
-                }
-              };
-
-              const SortButton = ({
-                field,
-                label,
-              }: {
-                field: "date" | "symbol" | "pnl";
-                label: string;
-              }) => (
+        {/* Tabs - clean underline style */}
+        <div className="sticky top-16 z-40 bg-background border-b border-border">
+          <div className="flex items-center px-3">
+            {tabs.map((t) => {
+              const active = activeTab === t.id;
+              return (
                 <button
-                  onClick={() => toggleSort(field)}
-                  className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg transition-all ${
-                    historySortField === field
-                      ? "bg-primary/15 text-primary"
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTab(t.id);
+                    setSelectedIds(new Set());
+                  }}
+                  className={`relative flex-1 py-3 text-sm font-bold tracking-tight transition-colors ${
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {label}
-                  {historySortField === field ? (
-                    historySortDir === "asc" ? (
-                      <ArrowUp className="h-3 w-3" />
-                    ) : (
-                      <ArrowDown className="h-3 w-3" />
-                    )
-                  ) : (
-                    <ArrowUpDown className="h-3 w-3 opacity-50" />
+                  {t.label}
+                  {t.count > 0 && (
+                    <span className={`ml-1 text-xs font-bold ${active ? "text-primary" : "text-muted-foreground"}`}>
+                      ({t.count})
+                    </span>
+                  )}
+                  {active && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-10 rounded-full bg-[hsl(var(--gold))]" />
                   )}
                 </button>
               );
+            })}
+          </div>
+        </div>
 
-              return (
-                <>
-                  {/* Filter Bar */}
-                  <Card className="p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Filter className="h-4 w-4 text-primary" />
-                      <span>Filters</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search symbol..."
-                          value={historySearch}
-                          onChange={(e) => setHistorySearch(e.target.value)}
-                          className="pl-9"
-                        />
-                      </div>
-                      <Select value={historyType} onValueChange={(v: any) => setHistoryType(v)}>
-                        <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Types</SelectItem>
-                          <SelectItem value="long">Buy Only</SelectItem>
-                          <SelectItem value="short">Sell Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={historyOutcome} onValueChange={(v: any) => setHistoryOutcome(v)}>
-                        <SelectTrigger><SelectValue placeholder="Outcome" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Outcomes</SelectItem>
-                          <SelectItem value="profit">Profit</SelectItem>
-                          <SelectItem value="loss">Loss</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={historyRange} onValueChange={(v: any) => setHistoryRange(v)}>
-                        <SelectTrigger><SelectValue placeholder="Date Range" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Time</SelectItem>
-                          <SelectItem value="today">Last 24 Hours</SelectItem>
-                          <SelectItem value="7d">Last 7 Days</SelectItem>
-                          <SelectItem value="30d">Last 30 Days</SelectItem>
-                          <SelectItem value="90d">Last 90 Days</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {/* Sort Controls */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground font-medium">Sort by:</span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <SortButton field="date" label="Date" />
-                        <SortButton field="symbol" label="Symbol" />
-                        <SortButton field="pnl" label="Net P&L" />
-                      </div>
-                    </div>
-                    {(historySearch || historyType !== "all" || historyOutcome !== "all" || historyRange !== "all") && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setHistorySearch("");
-                          setHistoryType("all");
-                          setHistoryOutcome("all");
-                          setHistoryRange("all");
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" /> Clear filters
-                      </Button>
-                    )}
-                  </Card>
+        {/* Section toolbar */}
+        {activeTab === "open" && openPositions.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-2.5 text-xs bg-muted/30 border-b border-border">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wide">All orders</span>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors font-semibold"
+              >
+                <X className="h-3.5 w-3.5" /> Cancel
+              </button>
+            )}
+          </div>
+        )}
 
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Total Trades</p>
-                      <p className="text-xl font-bold">{filtered.length}</p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Net P&L</p>
-                      <p className={`text-xl font-bold ${totalPnl >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
-                      </p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Win / Loss</p>
-                      <p className="text-xl font-bold">
-                        <span className="text-green-600">{wins}</span>
-                        <span className="text-muted-foreground"> / </span>
-                        <span className="text-red-600">{losses}</span>
-                      </p>
-                    </Card>
-                    <Card className="p-3">
-                      <p className="text-xs text-muted-foreground">Win Rate</p>
-                      <p className="text-xl font-bold text-primary">{winRate}%</p>
-                    </Card>
+        {/* Open Positions */}
+        {activeTab === "open" && (
+          <div>
+            {openPositions.length === 0 ? (
+              <div className="p-10 text-center">
+                <p className="text-muted-foreground text-sm">No open positions</p>
+                <Button className="mt-4" onClick={() => navigate("/dashboard")}>
+                  Start Trading
+                </Button>
+              </div>
+            ) : (
+              openPositions.map(position => (
+                <PositionCard
+                  key={position.id}
+                  position={position}
+                  showCloseButton={true}
+                  selectable={true}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Pending Orders */}
+        {activeTab === "pending" && (
+          <div>
+            {pendingOrders.length === 0 ? (
+              <div className="p-10 text-center">
+                <p className="text-muted-foreground text-sm">No pending orders</p>
+              </div>
+            ) : (
+              pendingOrders.map(order => <PendingOrderRow key={order.id} order={order} />)
+            )}
+          </div>
+        )}
+
+        {/* Closed (with filters) */}
+        {activeTab === "closed" && (
+          <div>
+            {/* Filter toggle bar */}
+            <div className="flex items-center justify-between px-4 py-2.5 text-xs bg-muted/30 border-b border-border">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wide">
+                {filteredClosed.length} trade{filteredClosed.length !== 1 ? "s" : ""}
+                {filteredClosed.length > 0 && (
+                  <span className={`ml-2 ${netClosedPnl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                    Net {netClosedPnl >= 0 ? "+" : ""}${netClosedPnl.toFixed(2)}
+                  </span>
+                )}
+              </span>
+              <button
+                onClick={() => setShowFilters(v => !v)}
+                className={`flex items-center gap-1 font-bold transition-colors ${
+                  showFilters ? "text-[hsl(var(--gold))]" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Filter className="h-3.5 w-3.5" /> Filters
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="p-4 space-y-3 bg-card border-b border-border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search symbol..."
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      className="pl-9 h-9"
+                    />
                   </div>
+                  <Select value={historyType} onValueChange={(v: any) => setHistoryType(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="long">Buy Only</SelectItem>
+                      <SelectItem value="short">Sell Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyOutcome} onValueChange={(v: any) => setHistoryOutcome(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Outcome" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Outcomes</SelectItem>
+                      <SelectItem value="profit">Profit</SelectItem>
+                      <SelectItem value="loss">Loss</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyRange} onValueChange={(v: any) => setHistoryRange(v)}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Date Range" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="today">Last 24 Hours</SelectItem>
+                      <SelectItem value="7d">Last 7 Days</SelectItem>
+                      <SelectItem value="30d">Last 30 Days</SelectItem>
+                      <SelectItem value="90d">Last 90 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(historySearch || historyType !== "all" || historyOutcome !== "all" || historyRange !== "all") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setHistorySearch("");
+                      setHistoryType("all");
+                      setHistoryOutcome("all");
+                      setHistoryRange("all");
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Clear filters
+                  </Button>
+                )}
+              </div>
+            )}
 
-                  {/* Results */}
-                  {sorted.length === 0 ? (
-                    <Card className="p-8 text-center">
-                      <History className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                      <p className="text-muted-foreground">No trades match your filters</p>
-                    </Card>
-                  ) : (
-                    sorted.map((position) => (
-                      <PositionCard key={position.id} position={position} />
-                    ))
-                  )}
-                </>
-              );
-            })()}
-          </TabsContent>
-        </Tabs>
+            {sortedClosed.length === 0 ? (
+              <div className="p-10 text-center">
+                <History className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">No closed trades</p>
+              </div>
+            ) : (
+              sortedClosed.map(position => <PositionCard key={position.id} position={position} />)
+            )}
+          </div>
+        )}
       </main>
+
+      {/* Sticky action bar (above BottomNav) — Position tab only */}
+      {activeTab === "open" && openPositions.length > 0 && (
+        <div className="fixed bottom-20 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-4px_20px_-8px_hsl(220_30%_20%/0.15)]">
+          <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+            <button
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-sm font-bold text-primary px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
+            >
+              <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                allSelected ? "bg-[hsl(var(--gold))] border-[hsl(var(--gold))]" : "border-border bg-card"
+              }`}>
+                {allSelected && <CheckCircle2 className="h-3 w-3 text-gold-foreground" strokeWidth={3} />}
+              </span>
+              Select All
+            </button>
+
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              className="flex items-center gap-1.5 text-sm font-bold text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Filter className="h-4 w-4" /> Custom
+            </button>
+
+            <button
+              onClick={handleBulkClose}
+              disabled={selectedIds.size === 0 || bulkClosing}
+              className="h-10 px-6 rounded-full bg-[hsl(var(--gold))] text-gold-foreground font-bold text-sm shadow-sm hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            >
+              {bulkClosing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>Close{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Close Position Confirmation Dialog */}
       <AlertDialog open={!!closePositionId} onOpenChange={() => setClosePositionId(null)}>
@@ -1608,6 +1577,7 @@ const Positions = () => {
       <BottomNav />
     </div>
   );
+
 };
 
 export default Positions;
