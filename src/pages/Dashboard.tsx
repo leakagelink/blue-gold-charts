@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeForexData, invokeCommoditiesData } from "@/lib/forexCache";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,28 @@ const Dashboard = () => {
   const [forexMomentumEnabled, setForexMomentumEnabled] = useState(true);
   const [commoditiesMomentumEnabled, setCommoditiesMomentumEnabled] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [activeMarketTab, setActiveMarketTab] = useState<string>("crypto");
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const marketTabs = ["crypto", ...(forexEnabled ? ["forex"] : []), ...(commoditiesEnabled ? ["commodities"] : [])];
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    const dy = e.changedTouches[0].clientY - touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    const idx = marketTabs.indexOf(activeMarketTab);
+    if (idx < 0) return;
+    if (dx < 0 && idx < marketTabs.length - 1) setActiveMarketTab(marketTabs[idx + 1]);
+    if (dx > 0 && idx > 0) setActiveMarketTab(marketTabs[idx - 1]);
+  };
 
   const fetchWalletBalance = async () => {
     if (!user) return;
@@ -385,7 +407,7 @@ const Dashboard = () => {
             {/* Pro desktop layout: markets + side rail */}
             <div className="xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-6 2xl:gap-8">
             <div className="min-w-0">
-            <Tabs defaultValue="crypto" className="w-full animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <Tabs value={activeMarketTab} onValueChange={setActiveMarketTab} className="w-full animate-fade-in touch-pan-y" style={{ animationDelay: "0.2s" }} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
               <TabsList className={`grid w-full mb-4 sm:mb-6 h-auto p-1.5 bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl shadow-lg ${
                 forexEnabled && commoditiesEnabled ? 'grid-cols-3' : 
                 forexEnabled || commoditiesEnabled ? 'grid-cols-2' : 'grid-cols-1'
