@@ -38,6 +38,10 @@ All colors MUST be HSL.
     --success: 142 60% 38%;
     --warning: 38 92% 48%;
 
+    /* Emerald Prestige gold accent */
+    --gold: 43 55% 54%;
+    --gold-foreground: 158 78% 12%;
+
     --border: 220 18% 90%;
     --input: 220 18% 92%;
     --ring: 158 78% 17%;
@@ -112,7 +116,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: '"Space Grotesk"', "DM Sans", system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
