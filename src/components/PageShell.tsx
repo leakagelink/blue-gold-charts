@@ -51,16 +51,17 @@ const PageShell = ({
 
       {/* Header */}
       <header className="sticky top-0 z-50 relative">
-        <div className="absolute inset-0 backdrop-blur-2xl bg-background/75 border-b border-border/50" />
+        <div className="absolute inset-0 backdrop-blur-2xl bg-background/85 border-b border-border/60" />
         <div className="absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/70 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shine bg-[length:200%_100%]" />
 
         <div className="relative flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/15 hover:text-primary transition-all duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary hover:-translate-x-0.5 active:scale-90 transition-all duration-300"
               onClick={() => navigate("/dashboard")}
               title="Back to Dashboard"
             >
@@ -71,11 +72,11 @@ const PageShell = ({
               onClick={() => navigate("/dashboard")}
             >
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-accent/30 to-secondary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute -inset-2 bg-[hsl(var(--gold))]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <img
                   src={logo}
                   alt="Grow FX Trade"
-                  className="relative h-11 w-auto sm:h-14 object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="relative h-11 w-auto sm:h-14 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-[-2deg]"
                 />
               </div>
             </div>
@@ -85,6 +86,7 @@ const PageShell = ({
           )}
         </div>
       </header>
+
 
       {/* Main Content */}
       <main className={`relative z-10 container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6 sm:py-8 ${maxWidthMap[maxWidth]} pb-24`}>
