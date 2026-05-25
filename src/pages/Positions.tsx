@@ -1208,33 +1208,29 @@ const Positions = () => {
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 relative">
-        <div className="absolute inset-0 backdrop-blur-2xl bg-background/85 border-b border-border/60" />
-        <div className="absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/70 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shine bg-[length:200%_100%]" />
-        <div className="relative container flex h-16 items-center justify-between px-4">
+      {/* Header — Magnetic Dock style */}
+      <header className="sticky top-0 z-50 h-20 backdrop-blur-md bg-background/80 border-b border-border/60">
+        <div className="relative h-full flex items-center justify-between px-4 sm:px-5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary hover:-translate-x-0.5 active:scale-90 transition-all duration-300"
+            className="h-9 w-9 rounded-full hover:bg-primary/10 text-primary active:scale-90 transition-all duration-300"
             onClick={() => navigate("/dashboard")}
+            aria-label="Back"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
           </Button>
-          <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <h1 className="font-display text-base sm:text-lg font-bold tracking-tight text-primary uppercase">
             My Positions
           </h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-xl bg-[hsl(var(--gold))]/15 border border-[hsl(var(--gold))]/40 hover:bg-[hsl(var(--gold))]/25 hover:scale-105 active:scale-95 transition-all duration-300"
+          <button
             onClick={fetchPositions}
             disabled={loading}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 hover:scale-105 active:scale-95 transition-all duration-300 text-[hsl(var(--gold))] disabled:opacity-50"
+            title="Refresh"
           >
-            <RefreshCcw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+            <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={2.5} />
+          </button>
         </div>
       </header>
 

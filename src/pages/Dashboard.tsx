@@ -245,85 +245,70 @@ const Dashboard = () => {
         <div className="absolute inset-0 bg-grid-pattern opacity-[0.03]" />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 relative group/header">
-        {/* Glass background layers */}
-        <div className="absolute inset-0 backdrop-blur-2xl bg-background/85 border-b border-border/60 transition-all duration-500" />
-        {/* Subtle scroll glow under header */}
-        <div className="absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        {/* Animated gold accent line */}
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/70 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shine bg-[length:200%_100%]" />
-
-        <div className="relative flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3">
-          <div className="flex items-center gap-2 sm:gap-3">
+      {/* Header — Magnetic Dock style: asymmetric, h-20, navy filled profile */}
+      <header className="sticky top-0 z-50 h-20 backdrop-blur-md bg-background/80 border-b border-border/60">
+        <div className="relative h-full flex items-center justify-between px-4 sm:px-5">
+          {/* Left: menu + brand */}
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary active:scale-90 transition-all duration-300"
+              className="h-9 w-9 rounded-full hover:bg-primary/10 active:scale-90 transition-all duration-300 text-primary"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Menu"
             >
-              <Menu className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 ${sidebarOpen ? "rotate-90" : ""}`} />
+              <Menu className={`h-5 w-5 transition-transform duration-300 ${sidebarOpen ? "rotate-90" : ""}`} strokeWidth={2.5} />
             </Button>
             <div
-              className="flex items-center gap-2 group cursor-pointer"
+              className="flex items-center gap-2 cursor-pointer group"
               onClick={() => navigate("/dashboard")}
             >
-              <div className="relative">
-                <div className="absolute -inset-2 bg-[hsl(var(--gold))]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <img
-                  src={logo}
-                  alt="Grow FX Trade"
-                  className="relative h-11 w-auto sm:h-14 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-[-2deg]"
-                />
-              </div>
+              <img
+                src={logo}
+                alt="Grow FX Trade"
+                className="h-10 w-auto sm:h-12 object-contain transition-transform duration-500 group-hover:scale-105"
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-[hsl(var(--gold))]/15 border border-[hsl(var(--gold))]/40 hover:bg-[hsl(var(--gold))]/25 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_2px_8px_-2px_hsl(var(--gold)/0.35)]"
-                onClick={() => navigate("/admin")}
-                title="Broker Dashboard"
-              >
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--gold-foreground))]" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              className="relative h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-xl bg-primary/8 border border-primary/30 hover:bg-primary/15 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_2px_10px_-2px_hsl(var(--primary)/0.25)] gap-1.5 sm:gap-2 overflow-hidden group"
+          {/* Right: wallet pill, shield, profile, sign out */}
+          <div className="flex items-center gap-2">
+            <button
               onClick={() => navigate("/wallet")}
+              className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 active:scale-95 transition-all duration-300 px-3 py-1.5 rounded-full"
               title="Wallet Balance"
             >
-              {/* Shimmer sweep */}
-              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/30 to-transparent" />
-              <Wallet className="relative h-4 w-4 sm:h-[18px] sm:w-[18px] text-primary group-hover:scale-110 transition-transform" />
-              <span className="relative font-mono font-bold text-xs sm:text-sm tabular-nums">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-xs font-bold text-primary font-mono tabular-nums">
                 ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-90 transition-all duration-300"
+            </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-[hsl(var(--gold))]/10 hover:bg-[hsl(var(--gold))]/20 hover:scale-105 active:scale-95 transition-all duration-300 text-[hsl(var(--gold))]"
+                title="Broker Dashboard"
+              >
+                <Shield className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            )}
+
+            <button
               onClick={() => navigate("/profile")}
+              className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.4)]"
               title="Profile"
             >
-              <User className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-destructive/15 hover:text-destructive hover:scale-105 active:scale-90 transition-all duration-300"
+              <User className="h-[18px] w-[18px]" strokeWidth={2} />
+            </button>
+
+            <button
               onClick={signOut}
+              className="ml-0.5 p-1.5 text-muted-foreground hover:text-destructive transition-colors duration-300 active:scale-90"
               title="Sign Out"
             >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
+              <LogOut className="h-[18px] w-[18px]" />
+            </button>
           </div>
         </div>
       </header>
