@@ -1,15 +1,26 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { User, Mail, FileCheck, CheckCircle, Clock, XCircle, ChevronRight, Phone, Hash, Copy, Download, Smartphone, BarChart3 } from "lucide-react";
+import {
+  User,
+  Mail,
+  FileCheck,
+  CheckCircle,
+  Clock,
+  XCircle,
+  ChevronRight,
+  Phone,
+  Copy,
+  Download,
+  Smartphone,
+  TrendingUp,
+  CreditCard,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-import PageShell, { glassCardClass } from "@/components/PageShell";
+import PageShell from "@/components/PageShell";
 import PaymentMethodsManager from "@/components/PaymentMethodsManager";
 
 interface Profile {
@@ -22,7 +33,7 @@ interface Profile {
 }
 
 interface KYCStatus {
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
 }
 
 interface TradeHistoryItem {
@@ -34,6 +45,15 @@ interface TradeHistoryItem {
   isProfit: boolean;
 }
 
+const SectionLabel = ({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) => (
+  <div className="flex justify-between items-center mb-2 px-1">
+    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+      {children}
+    </label>
+    {right}
+  </div>
+);
+
 const Profile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -42,6 +62,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [appDownloadUrl, setAppDownloadUrl] = useState<string | null>(null);
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
 
@@ -61,6 +82,7 @@ const Profile = () => {
       if (error) throw error;
       setProfile(data);
       setFullName(data.full_name || "");
+      setMobile(data.mobile_number || "");
 
       const { data: kycData } = await supabase
         .from("kyc_submissions").select("status").eq("user_id", user?.id).maybeSingle();
@@ -70,7 +92,6 @@ const Profile = () => {
         .from("payment_settings").select("setting_value").eq("setting_key", "app_download_url").maybeSingle();
       if (appUrlSetting?.setting_value) setAppDownloadUrl(appUrlSetting.setting_value);
 
-      // Fetch closed positions — same source as Broker (admin) view so data matches
       const { data: closedPositions } = await supabase
         .from("positions")
         .select("symbol, position_type, pnl, closed_at, status")
@@ -121,8 +142,8 @@ const Profile = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/40 to-background">
-        <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/60">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-card border border-border">
           <div className="h-5 w-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
           <p className="text-sm font-medium">Loading profile...</p>
         </div>
@@ -131,249 +152,291 @@ const Profile = () => {
   }
 
   return (
-    <PageShell title="My Profile" subtitle="Manage your account information" icon={User} maxWidth="wide">
-      {/* Client ID Card - full width banner */}
-      {profile?.client_id && (
-        <Card className={`${glassCardClass} p-4 mb-5 group hover:scale-[1.01] transition-all duration-300`}>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/80 to-transparent" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/30 border border-accent/40 flex items-center justify-center shadow-lg">
-                <Hash className="h-5 w-5 text-primary" />
+    <PageShell title="My Profile" subtitle="Account management and identity" icon={User} maxWidth="wide">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-6 xl:gap-8">
+        {/* LEFT COLUMN */}
+        <div className="space-y-6">
+          {/* High-Priority Client ID Card (Navy) */}
+          {profile?.client_id && (
+            <div className="relative overflow-hidden p-6 rounded-3xl bg-primary text-primary-foreground shadow-lg animate-fade-in">
+              <div className="relative z-10 flex justify-between items-start">
+                <div>
+                  <p className="text-gold text-[10px] font-bold uppercase tracking-[0.15em] mb-1">
+                    Client ID
+                  </p>
+                  <p
+                    className="text-2xl font-bold tracking-tight"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  >
+                    {profile.client_id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(profile.client_id || "");
+                    toast.success("Client ID copied!");
+                  }}
+                  className="p-2.5 rounded-xl bg-primary-foreground/10 border border-primary-foreground/20 hover:bg-primary-foreground/20 transition-all active:scale-95"
+                  aria-label="Copy Client ID"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="mt-4 text-[10px] text-primary-foreground/60 leading-relaxed max-w-[240px]">
+                Use this ID to login along with email or mobile number
+              </p>
+              {/* Subtle background geometry */}
+              <div className="absolute -right-12 -bottom-12 w-32 h-32 border border-primary-foreground/5 rounded-full pointer-events-none" />
+              <div className="absolute -right-6 -bottom-6 w-24 h-24 border border-primary-foreground/10 rounded-full pointer-events-none" />
+            </div>
+          )}
+
+          {/* Core Identity Form */}
+          <div className="space-y-6 bg-muted/40 p-6 rounded-[32px] border border-border animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center">
+                  <User className="w-7 h-7 text-primary" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-background rounded-full" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Your Client ID</p>
-                <p className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{profile.client_id}</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl hover:bg-primary/10 hover:text-primary"
-              onClick={() => {
-                navigator.clipboard.writeText(profile.client_id || "");
-                toast.success("Client ID copied!");
-              }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="relative text-xs text-muted-foreground mt-2">
-            Use this ID to login along with email or mobile number
-          </p>
-        </Card>
-      )}
-
-      {/* Pro 2-column desktop layout */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-6 xl:gap-8">
-        <div>
-      <Card className={`${glassCardClass} p-5 sm:p-6 mb-5`}>
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-        <div className="relative flex items-center gap-4 mb-6">
-          <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-br from-primary via-secondary to-accent rounded-full blur-md opacity-60 animate-pulse" />
-            <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-xl">
-              <User className="h-10 w-10 text-primary-foreground" />
-            </div>
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              {profile?.full_name || "User"}
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Member since {profile?.created_at ? formatDate(profile.created_at) : "Unknown"}
-            </p>
-          </div>
-        </div>
-
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs uppercase tracking-wide font-semibold">Full Name</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="name" type="text" value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="pl-10 h-11 bg-card/60 backdrop-blur-xl border-border/60 focus:border-primary/60 rounded-xl"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs uppercase tracking-wide font-semibold">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email" type="email"
-                value={profile?.email || user?.email || ""}
-                className="pl-10 h-11 bg-muted/40 border-border/60 rounded-xl"
-                disabled
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mobile" className="text-xs uppercase tracking-wide font-semibold">Mobile Number</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="mobile" type="tel"
-                value={profile?.mobile_number || ""}
-                className="pl-10 h-11 bg-muted/40 border-border/60 rounded-xl"
-                disabled
-              />
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-11 bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-95 text-primary-foreground font-semibold rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.6)] transition-all duration-300"
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </form>
-      </Card>
-
-      {/* Trade History stays in left column */}
-      <Card className={`${glassCardClass} p-5`}>
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-        <h2 className="text-base sm:text-lg font-bold mb-4 flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-accent/30">
-            <BarChart3 className="h-4 w-4 text-primary" />
-          </div>
-          <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            Trade History
-          </span>
-        </h2>
-        {loading ? (
-          <p className="text-muted-foreground text-center py-8 text-sm">Loading trade history...</p>
-        ) : tradeHistory.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8 text-sm">No trade history yet</p>
-        ) : (
-          <div className="space-y-3">
-            {tradeHistory.map((trade, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 hover:bg-muted/60 border border-border/40 transition-all duration-300">
-                <div>
-                  <div className="font-semibold text-sm">{trade.symbol} <span className={`ml-1 text-xs font-medium ${trade.side === "BUY" ? "text-emerald-500" : "text-red-500"}`}>{trade.side}</span></div>
-                  <div className="text-xs text-muted-foreground">{trade.date}</div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-bold text-sm ${trade.isProfit ? "text-emerald-500" : "text-red-500"}`}>{trade.amount}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{trade.status}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-        </div>
-
-        {/* Right column: app, kyc, account info */}
-        <div className="lg:sticky lg:top-24 lg:self-start space-y-5">
-      {/* App Download Card */}
-        <Card className={`${glassCardClass} p-5 mb-5 group hover:scale-[1.01] transition-all duration-300`}>
-          <div className="absolute inset-0 bg-primary/5" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                <Smartphone className="h-6 w-6 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-bold text-sm sm:text-base">Download Mobile App</h3>
-                <p className="text-xs text-muted-foreground truncate">
-                  {appDownloadUrl ? "Get the Grow FX Trade app for better trading" : "App will appear here after Broker upload"}
+                <h3 className="font-bold text-primary leading-tight">
+                  {profile?.full_name || "User"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Member since {profile?.created_at ? formatDate(profile.created_at) : "Unknown"}
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              disabled={!appDownloadUrl}
-              onClick={() => window.open(appDownloadUrl, '_blank')}
-              className="rounded-xl flex-shrink-0"
-            >
-              <Download className="h-4 w-4 mr-1.5" />
-              {appDownloadUrl ? "Get" : "Pending"}
-            </Button>
-          </div>
-        </Card>
 
-      {/* KYC Verification Card */}
-      <Card
-        className={`${glassCardClass} p-5 mb-5 cursor-pointer group hover:scale-[1.01] transition-all duration-300`}
-        onClick={() => navigate("/kyc")}
-      >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border ${
-              kycStatus?.status === "approved" ? "bg-emerald-500/20 border-emerald-500/40" :
-              kycStatus?.status === "rejected" ? "bg-destructive/20 border-destructive/40" :
-              kycStatus?.status === "pending" ? "bg-amber-500/20 border-amber-500/40" :
-              "bg-muted border-border"
-            }`}>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
+            >
+              {/* Full Name */}
+              <div>
+                <SectionLabel>Full Name</SectionLabel>
+                <div className="px-4 py-3 bg-card border border-border rounded-xl flex items-center gap-3 focus-within:border-accent transition-colors">
+                  <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="h-auto border-0 bg-transparent p-0 text-sm font-medium text-primary focus-visible:ring-0 shadow-none"
+                    placeholder="Enter full name"
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <SectionLabel
+                  right={<span className="text-[9px] font-bold text-muted-foreground/70 uppercase">Read-only</span>}
+                >
+                  Email Address
+                </SectionLabel>
+                <div className="px-4 py-3 bg-muted border border-border rounded-xl flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground truncate">
+                    {profile?.email || user?.email || ""}
+                  </span>
+                </div>
+              </div>
+
+              {/* Mobile */}
+              <div>
+                <SectionLabel>Mobile Number</SectionLabel>
+                <div className="px-4 py-3 bg-card border border-border rounded-xl flex items-center gap-3 focus-within:border-accent transition-colors">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Input
+                    type="tel"
+                    value={mobile}
+                    disabled
+                    placeholder="Enter mobile number"
+                    className="h-auto border-0 bg-transparent p-0 text-sm font-medium text-primary focus-visible:ring-0 shadow-none disabled:opacity-100"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={saving}
+                className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl transition-all active:scale-[0.98]"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </div>
+
+          {/* Trade History */}
+          <div className="p-5 bg-card border border-border rounded-2xl animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <h2 className="text-sm font-bold text-primary">Trade History</h2>
+            </div>
+            {tradeHistory.length === 0 ? (
+              <div className="py-6 border border-dashed border-border rounded-xl bg-muted/30 flex flex-col items-center">
+                <p className="text-[11px] text-muted-foreground text-center px-4">
+                  No trade history yet
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {tradeHistory.map((trade, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
+                  >
+                    <div>
+                      <div className="font-semibold text-sm text-primary">
+                        {trade.symbol}{" "}
+                        <span
+                          className={`ml-1 text-[10px] font-bold ${
+                            trade.side === "BUY" ? "text-emerald-600" : "text-red-500"
+                          }`}
+                        >
+                          {trade.side}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">{trade.date}</div>
+                    </div>
+                    <div
+                      className={`font-bold text-sm ${
+                        trade.isProfit ? "text-emerald-600" : "text-red-500"
+                      }`}
+                    >
+                      {trade.amount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="lg:sticky lg:top-24 lg:self-start space-y-3 mt-6 lg:mt-0">
+          {/* KYC */}
+          <button
+            onClick={() => navigate("/kyc")}
+            className="w-full p-5 bg-card border border-border rounded-2xl flex items-center gap-4 group hover:border-accent/50 transition-colors text-left animate-fade-in"
+          >
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                kycStatus?.status === "approved"
+                  ? "bg-emerald-500/10 text-emerald-600"
+                  : kycStatus?.status === "rejected"
+                  ? "bg-destructive/10 text-destructive"
+                  : kycStatus?.status === "pending"
+                  ? "bg-gold/10 text-gold"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
               {kycStatus?.status === "approved" ? (
-                <CheckCircle className="h-6 w-6 text-emerald-500" />
+                <CheckCircle className="w-5 h-5" />
               ) : kycStatus?.status === "rejected" ? (
-                <XCircle className="h-6 w-6 text-destructive" />
+                <XCircle className="w-5 h-5" />
               ) : kycStatus?.status === "pending" ? (
-                <Clock className="h-6 w-6 text-amber-500" />
+                <Clock className="w-5 h-5" />
               ) : (
-                <FileCheck className="h-6 w-6 text-muted-foreground" />
+                <FileCheck className="w-5 h-5" />
               )}
             </div>
-            <div>
-              <h3 className="font-bold flex items-center gap-2 text-sm sm:text-base">
-                KYC Verification
-                {kycStatus && (
-                  <Badge className={
-                    kycStatus.status === "approved" ? "bg-emerald-500" :
-                    kycStatus.status === "rejected" ? "bg-destructive" :
-                    "bg-amber-500"
-                  }>
-                    {kycStatus.status.charAt(0).toUpperCase() + kycStatus.status.slice(1)}
-                  </Badge>
-                )}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {kycStatus?.status === "approved" ? "Your identity is verified"
-                  : kycStatus?.status === "pending" ? "Verification in progress"
-                  : kycStatus?.status === "rejected" ? "Please resubmit your documents"
-                  : "Complete your identity verification"}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-primary">KYC Verification</h4>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {kycStatus?.status === "approved"
+                  ? "Your identity is verified"
+                  : kycStatus?.status === "pending"
+                  ? "Verification in progress"
+                  : kycStatus?.status === "rejected"
+                  ? "Please resubmit your documents"
+                  : "Identity verification required"}
               </p>
             </div>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-        </div>
-      </Card>
-      <PaymentMethodsManager />
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+          </button>
 
+          {/* Withdrawal Methods */}
+          <div className="p-5 bg-card border border-border rounded-2xl animate-fade-in">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-primary">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-primary">Withdrawal Methods</h4>
+              </div>
+            </div>
+            <PaymentMethodsManager />
+          </div>
 
-      <Card className={`${glassCardClass} p-5 mb-5`}>
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-        <h3 className="text-base sm:text-lg font-bold mb-4 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-          Account Information
-        </h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between items-center pb-2 border-b border-border/40">
-            <span className="text-muted-foreground">Client ID:</span>
-            <span className="font-mono font-bold text-primary">{profile?.client_id || "N/A"}</span>
+          {/* Account Information Registry */}
+          <div className="bg-muted/40 p-6 rounded-[32px] animate-fade-in">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">
+              Account Information
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center bg-card p-3 rounded-xl border border-border">
+                <span className="text-[11px] text-muted-foreground font-medium">Client ID</span>
+                <span
+                  className="text-[11px] font-bold text-primary tracking-tight"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  {profile?.client_id || "N/A"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center bg-card p-3 rounded-xl border border-border">
+                <span className="text-[11px] text-muted-foreground font-medium">Account ID</span>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  {user?.id.slice(0, 8)}...
+                </span>
+              </div>
+              <div className="flex justify-between items-center bg-card p-3 rounded-xl border border-border">
+                <span className="text-[11px] text-muted-foreground font-medium">Email Verified</span>
+                <span
+                  className={`text-[11px] font-bold ${
+                    user?.email_confirmed_at ? "text-emerald-600" : "text-gold"
+                  }`}
+                >
+                  {user?.email_confirmed_at ? "YES" : "NO"}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between items-center pb-2 border-b border-border/40">
-            <span className="text-muted-foreground">Account ID:</span>
-            <span className="font-mono text-xs">{user?.id.slice(0, 8)}...</span>
+
+          {/* Native App Callout */}
+          <div className="p-4 bg-gold/5 border border-gold/20 rounded-2xl flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center text-gold-foreground shrink-0">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-primary truncate">Download Mobile App</p>
+                <p className="text-[9px] text-muted-foreground truncate">
+                  {appDownloadUrl ? "Tap to download APK" : "Available soon on Android"}
+                </p>
+              </div>
+            </div>
+            {appDownloadUrl ? (
+              <Button
+                size="sm"
+                onClick={() => window.open(appDownloadUrl, "_blank")}
+                className="h-8 px-3 bg-gold hover:bg-gold/90 text-gold-foreground rounded-lg text-[10px] font-bold shrink-0"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Get
+              </Button>
+            ) : (
+              <span className="text-[9px] font-bold text-gold bg-gold/10 px-2 py-1 rounded-md shrink-0">
+                PENDING
+              </span>
+            )}
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Email Verified:</span>
-            <span className={user?.email_confirmed_at ? "text-emerald-500 font-semibold" : "text-amber-500 font-semibold"}>
-              {user?.email_confirmed_at ? "Yes" : "No"}
-            </span>
-          </div>
-        </div>
-      </Card>
         </div>
       </div>
     </PageShell>
