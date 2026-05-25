@@ -774,11 +774,19 @@ const Positions = () => {
         .eq('status', 'closed')
         .order('closed_at', { ascending: false });
 
+      const { data: pending } = await supabase
+        .from('limit_orders')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'pending' as any)
+        .order('created_at', { ascending: false });
+
       if (openError) throw openError;
       if (closedError) throw closedError;
 
       setOpenPositions(open || []);
       setClosedPositions(closed || []);
+      setPendingOrders(pending || []);
     } catch (error) {
       console.error('Error fetching positions:', error);
       toast.error('Failed to load positions');
