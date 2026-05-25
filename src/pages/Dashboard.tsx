@@ -246,26 +246,36 @@ const Dashboard = () => {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 relative">
+      <header className="sticky top-0 z-50 relative group/header">
         {/* Glass background layers */}
-        <div className="absolute inset-0 backdrop-blur-2xl bg-background/75 border-b border-border/50" />
+        <div className="absolute inset-0 backdrop-blur-2xl bg-background/85 border-b border-border/60 transition-all duration-500" />
+        {/* Subtle scroll glow under header */}
         <div className="absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+        {/* Animated gold accent line */}
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/70 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shine bg-[length:200%_100%]" />
 
         <div className="relative flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/15 hover:text-primary transition-all duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary active:scale-90 transition-all duration-300"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Menu className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 ${sidebarOpen ? "rotate-90" : ""}`} />
             </Button>
-            <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate("/dashboard")}>
+            <div
+              className="flex items-center gap-2 group cursor-pointer"
+              onClick={() => navigate("/dashboard")}
+            >
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-accent/30 to-secondary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <img src={logo} alt="Grow FX Trade" className="relative h-11 w-auto sm:h-14 object-contain transition-transform duration-300 group-hover:scale-105" />
+                <div className="absolute -inset-2 bg-[hsl(var(--gold))]/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <img
+                  src={logo}
+                  alt="Grow FX Trade"
+                  className="relative h-11 w-auto sm:h-14 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-[-2deg]"
+                />
               </div>
             </div>
           </div>
@@ -275,28 +285,31 @@ const Dashboard = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-accent/10 to-secondary/10 border border-accent/30 hover:from-accent/20 hover:to-secondary/20 hover:text-accent transition-all duration-300 shadow-[0_2px_8px_-2px_hsl(var(--accent)/0.3)]"
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-[hsl(var(--gold))]/15 border border-[hsl(var(--gold))]/40 hover:bg-[hsl(var(--gold))]/25 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_2px_8px_-2px_hsl(var(--gold)/0.35)]"
                 onClick={() => navigate("/admin")}
                 title="Broker Dashboard"
               >
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--gold-foreground))]" />
               </Button>
             )}
             <Button
               variant="ghost"
-              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/30 hover:from-primary/20 hover:to-accent/20 hover:text-primary transition-all duration-300 shadow-[0_2px_8px_-2px_hsl(var(--primary)/0.3)] gap-1.5 sm:gap-2"
+              className="relative h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-xl bg-primary/8 border border-primary/30 hover:bg-primary/15 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_2px_10px_-2px_hsl(var(--primary)/0.25)] gap-1.5 sm:gap-2 overflow-hidden group"
               onClick={() => navigate("/wallet")}
               title="Wallet Balance"
             >
-              <Wallet className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" />
-              <span className="font-mono font-bold text-xs sm:text-sm tabular-nums">
+              {/* Shimmer sweep */}
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/30 to-transparent" />
+              <Wallet className="relative h-4 w-4 sm:h-[18px] sm:w-[18px] text-primary group-hover:scale-110 transition-transform" />
+              <span className="relative font-mono font-bold text-xs sm:text-sm tabular-nums">
                 ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
+              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/15 hover:text-primary transition-all duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-90 transition-all duration-300"
               onClick={() => navigate("/profile")}
               title="Profile"
             >
@@ -305,7 +318,7 @@ const Dashboard = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-destructive/15 hover:text-destructive transition-all duration-300"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-destructive/15 hover:text-destructive hover:scale-105 active:scale-90 transition-all duration-300"
               onClick={signOut}
               title="Sign Out"
             >
@@ -314,6 +327,7 @@ const Dashboard = () => {
           </div>
         </div>
       </header>
+
 
       <div className="flex relative z-10">
         {/* Sidebar */}
