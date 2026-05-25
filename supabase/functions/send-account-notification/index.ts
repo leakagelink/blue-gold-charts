@@ -24,10 +24,10 @@ const brandHeader = (title: string, gradient: string) => `
 `;
 
 const brandFooter = `
-  <div style="background: #1a0a0a; padding: 25px 20px; text-align: center; border-radius: 0 0 12px 12px;">
-    <p style="margin: 0 0 8px; color: #d4a017; font-size: 16px; font-weight: 700; letter-spacing: 1px;">Grow FX Trade</p>
-    <p style="margin: 0; color: #a89070; font-size: 12px;">Trade Smart. Trade Gold.</p>
-    <p style="margin: 12px 0 0; color: #6b5544; font-size: 11px;">© ${new Date().getFullYear()} Grow FX Trade. All rights reserved.</p>
+  <div style="background: #0a1f17; padding: 25px 20px; text-align: center; border-radius: 0 0 12px 12px;">
+    <p style="margin: 0 0 8px; color: #10b981; font-size: 16px; font-weight: 700; letter-spacing: 1px;">Grow FX Trade</p>
+    <p style="margin: 0; color: #86efac; font-size: 12px;">Trade Smart. Grow Fast.</p>
+    <p style="margin: 12px 0 0; color: #6b7280; font-size: 11px;">© ${new Date().getFullYear()} Grow FX Trade. All rights reserved.</p>
   </div>
 `;
 
@@ -60,28 +60,28 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlContent = isActivated 
       ? `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-          ${brandHeader('🚀 Account Activated!', 'linear-gradient(135deg, #7c1d1d, #a83232)')}
-          <div style="background: #fffbf5; padding: 35px 30px;">
-            <p style="font-size: 16px; color: #2c1810; margin: 0 0 20px;">
+          ${brandHeader('🚀 Account Activated!', 'linear-gradient(135deg, #065f46, #10b981)')}
+          <div style="background: #f0fdf4; padding: 35px 30px;">
+            <p style="font-size: 16px; color: #0f172a; margin: 0 0 20px;">
               Hi <strong>${userName || 'Trader'}</strong>,
             </p>
-            <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
-              Welcome aboard! Your Grow FX Trade account has been <strong style="color: #7c1d1d;">activated</strong> by our broker team.
+            <p style="font-size: 16px; color: #0f172a; line-height: 1.6;">
+              Welcome aboard! Your Grow FX Trade account has been <strong style="color: #065f46;">activated</strong> by our broker team.
             </p>
-            <div style="background: linear-gradient(135deg, #fff8e7, #fef0c8); border: 2px solid #d4a017; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center;">
-              <p style="margin: 0; color: #7c1d1d; font-size: 18px; font-weight: 700;">✅ Your account is ready to trade!</p>
+            <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #10b981; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center;">
+              <p style="margin: 0; color: #065f46; font-size: 18px; font-weight: 700;">✅ Your account is ready to trade!</p>
             </div>
-            <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
+            <p style="font-size: 16px; color: #0f172a; line-height: 1.6;">
               You now have full access to:
             </p>
-            <ul style="color: #2c1810; line-height: 1.8; padding-left: 20px;">
+            <ul style="color: #0f172a; line-height: 1.8; padding-left: 20px;">
               <li>Trade cryptocurrencies, forex & commodities</li>
               <li>Deposit and withdraw funds</li>
               <li>Real-time market data</li>
               <li>Portfolio management</li>
             </ul>
             <div style="text-align: center; margin: 30px 0 10px;">
-              <a href="https://growfxtrade.com" style="display: inline-block; background: linear-gradient(135deg, #d4a017, #b8860b); color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 700;">Login & Start Trading</a>
+              <a href="https://growfxtrade.com" style="display: inline-block; background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: 700;">Login & Start Trading</a>
             </div>
           </div>
           ${brandFooter}
@@ -89,15 +89,15 @@ const handler = async (req: Request): Promise<Response> => {
       `
       : `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-          ${brandHeader('Account Status Update', 'linear-gradient(135deg, #7c1d1d, #5a1414)')}
-          <div style="background: #fffbf5; padding: 35px 30px;">
-            <p style="font-size: 16px; color: #2c1810; margin: 0 0 20px;">
+          ${brandHeader('Account Status Update', 'linear-gradient(135deg, #065f46, #064e3b)')}
+          <div style="background: #f0fdf4; padding: 35px 30px;">
+            <p style="font-size: 16px; color: #0f172a; margin: 0 0 20px;">
               Hi <strong>${userName || 'Trader'}</strong>,
             </p>
-            <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
+            <p style="font-size: 16px; color: #0f172a; line-height: 1.6;">
               Your Grow FX Trade account has been temporarily deactivated.
             </p>
-            <p style="font-size: 16px; color: #2c1810; line-height: 1.6;">
+            <p style="font-size: 16px; color: #0f172a; line-height: 1.6;">
               Please contact our support team if you have any questions or need assistance.
             </p>
           </div>
