@@ -3,11 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeForexData } from "@/lib/forexCache";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, X, RefreshCcw, ArrowUp, ArrowDown, CheckCircle2, Loader2, History, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import {
