@@ -90,8 +90,13 @@ const Positions = () => {
   const { user } = useAuth();
   const [openPositions, setOpenPositions] = useState<Position[]>([]);
   const [closedPositions, setClosedPositions] = useState<Position[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"open" | "pending" | "closed">("open");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [closePositionId, setClosePositionId] = useState<string | null>(null);
+  const [bulkClosing, setBulkClosing] = useState(false);
   const [closingPositionId, setClosingPositionId] = useState<string | null>(null);
   const [closedSuccessId, setClosedSuccessId] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
