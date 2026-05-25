@@ -407,7 +407,7 @@ const Dashboard = () => {
             {/* Pro desktop layout: markets + side rail */}
             <div className="xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-6 2xl:gap-8">
             <div className="min-w-0">
-            <Tabs value={activeMarketTab} onValueChange={setActiveMarketTab} className="w-full animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <Tabs value={activeMarketTab} onValueChange={setActiveMarketTab} className="w-full animate-fade-in touch-pan-y" style={{ animationDelay: "0.2s" }} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
               <TabsList className={`grid w-full mb-4 sm:mb-6 h-auto p-1.5 bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl shadow-lg ${
                 forexEnabled && commoditiesEnabled ? 'grid-cols-3' : 
                 forexEnabled || commoditiesEnabled ? 'grid-cols-2' : 'grid-cols-1'
