@@ -1210,14 +1210,15 @@ const Positions = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-50 relative">
-        <div className="absolute inset-0 backdrop-blur-2xl bg-background/75 border-b border-border/50" />
+        <div className="absolute inset-0 backdrop-blur-2xl bg-background/85 border-b border-border/60" />
         <div className="absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--gold))]/70 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shine bg-[length:200%_100%]" />
         <div className="relative container flex h-16 items-center justify-between px-4">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/15 hover:text-primary transition-all duration-300"
+            className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary hover:-translate-x-0.5 active:scale-90 transition-all duration-300"
             onClick={() => navigate("/dashboard")}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -1228,7 +1229,7 @@ const Positions = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/15 hover:text-primary transition-all duration-300"
+            className="h-9 w-9 rounded-xl bg-[hsl(var(--gold))]/15 border border-[hsl(var(--gold))]/40 hover:bg-[hsl(var(--gold))]/25 hover:scale-105 active:scale-95 transition-all duration-300"
             onClick={fetchPositions}
             disabled={loading}
           >
