@@ -1194,20 +1194,20 @@ const Positions = () => {
     const sideLabel = isLong ? 'BUY' : 'SELL';
     const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
     return (
-      <div className="px-3 py-3 sm:px-4 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
-        <div className="flex items-center gap-3">
+      <div className="px-2.5 py-2.5 sm:px-4 sm:py-3 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight">{order.symbol}</h3>
-              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <h3 className="font-bold text-[13px] sm:text-base text-primary tracking-tight truncate max-w-[140px] sm:max-w-none">{order.symbol}</h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[9px] sm:text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
               <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">{order.leverage}x</span>
             </div>
-            <p className="text-[11px] text-muted-foreground font-mono">
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-mono truncate">
               Limit @ {formatMarketPrice(order.limit_price)}
             </p>
           </div>
-          <div className="text-center shrink-0 min-w-[44px]">
-            <p className="text-sm font-bold text-primary tabular-nums">
+          <div className="hidden xs:block text-center shrink-0 min-w-[38px] sm:min-w-[44px]">
+            <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">
               {order.lot_size ? Number(order.lot_size).toFixed(2) : Number(order.amount ?? 0).toFixed(2)}
             </p>
             <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
@@ -1215,7 +1215,7 @@ const Positions = () => {
             </p>
           </div>
           <div className="shrink-0">
-            <span className="text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-2 py-1 rounded-md">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-1.5 sm:px-2 py-1 rounded-md">
               Pending
             </span>
           </div>
