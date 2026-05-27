@@ -318,6 +318,7 @@ const AdminPanel = () => {
           appDownloadUrl: settings.appDownloadUrl || "",
           apiPassword: "",
           maxLeverage: settings.maxLeverage || "100",
+          brokeragePercentage: settings.brokeragePercentage || "0.05",
         });
         
         // Set deposit offer settings
