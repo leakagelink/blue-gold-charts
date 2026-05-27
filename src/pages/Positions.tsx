@@ -1250,6 +1250,14 @@ const Positions = () => {
             )}
           </div>
         )}
+
+        {/* Brokerage strip */}
+        {Number(position.brokerage || 0) > 0 && (
+          <div className="flex items-center gap-1 mt-1.5 pl-7 sm:pl-9 text-[10px] font-medium text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>Brokerage: <span className="text-amber-600 font-semibold">${Number(position.brokerage).toFixed(2)}</span></span>
+          </div>
+        )}
       </div>
     );
   };
