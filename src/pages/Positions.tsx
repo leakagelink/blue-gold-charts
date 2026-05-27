@@ -833,6 +833,8 @@ const Positions = () => {
         : (position.entry_price - closePrice) * quantity;
 
       const closedAt = new Date().toISOString();
+      const closeBrokerage = +(closePrice * quantity * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalBrokerage = Number(position.brokerage || 0) + closeBrokerage;
 
       // Close position in database - use status check to prevent double close
       const { data: updateResult, error } = await supabase
@@ -842,8 +844,9 @@ const Positions = () => {
           closed_at: closedAt,
           close_price: closePrice,
           pnl: pnl,
-          closed_by: user?.id
-        })
+          closed_by: user?.id,
+          brokerage: totalBrokerage,
+        } as any)
         .eq('id', position.id)
         .eq('status', 'open') // CRITICAL: Only update if still open
         .select();
