@@ -119,6 +119,9 @@ const Positions = () => {
   const closedSuccessIdRef = useRef<string | null>(null);
   // Track permanently closed positions to prevent re-adding during price updates
   const permanentlyClosedIdsRef = useRef<Set<string>>(new Set());
+  // Brokerage % per side (loaded from broker settings)
+  const brokeragePctRef = useRef<number>(0.05);
+  
   
   // Keep refs in sync with state
   useEffect(() => {
