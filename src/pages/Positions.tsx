@@ -609,20 +609,22 @@ const Positions = () => {
         .maybeSingle();
 
       const currentBalance = wallet?.balance || 0;
-      if (currentBalance < margin) {
+      const openBrokerage = +(usdAmount * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalRequired = margin + openBrokerage;
+      if (currentBalance < totalRequired) {
         // Mark as cancelled due to insufficient balance
         await supabase
           .from('limit_orders')
           .update({ status: 'cancelled' as any, updated_at: new Date().toISOString() })
           .eq('id', order.id);
-        toast.error(`Limit order for ${order.symbol} cancelled - insufficient balance`);
+        toast.error(`Limit order for ${order.symbol} cancelled - insufficient balance (need $${totalRequired.toFixed(2)})`);
         return;
       }
 
-      // Deduct margin
+      // Deduct margin + brokerage
       await supabase
         .from('user_wallets')
-        .update({ balance: currentBalance - margin })
+        .update({ balance: currentBalance - totalRequired })
         .eq('user_id', order.user_id)
         .eq('currency', 'USD');
 
@@ -636,6 +638,8 @@ const Positions = () => {
         .eq('status', 'open')
         .maybeSingle();
 
+      let positionRefId: string | null = null;
+
       if (existingPosition) {
         const oldAmount = Number(existingPosition.amount);
         const oldEntryPrice = Number(existingPosition.entry_price);
@@ -644,6 +648,7 @@ const Positions = () => {
         const newAvgEntryPrice = ((oldAmount * oldEntryPrice) + (assetQuantity * entryPrice)) / newTotalAmount;
         const newTotalMargin = oldMargin + margin;
         const newLeverage = Math.round((newTotalAmount * newAvgEntryPrice) / newTotalMargin);
+        const newBrokerage = Number((existingPosition as any).brokerage || 0) + openBrokerage;
 
         await supabase
           .from('positions')
@@ -655,11 +660,13 @@ const Positions = () => {
             leverage: newLeverage,
             stop_loss: order.stop_loss ?? existingPosition.stop_loss,
             take_profit: order.take_profit ?? existingPosition.take_profit,
+            brokerage: newBrokerage,
             updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq('id', existingPosition.id);
+        positionRefId = existingPosition.id;
       } else {
-        await supabase.from('positions').insert({
+        const { data: newPos } = await supabase.from('positions').insert({
           user_id: order.user_id,
           symbol: order.symbol,
           position_type: order.position_type,
@@ -671,18 +678,30 @@ const Positions = () => {
           status: 'open',
           stop_loss: order.stop_loss,
           take_profit: order.take_profit,
-        });
+          brokerage: openBrokerage,
+        } as any).select('id').maybeSingle();
+        positionRefId = newPos?.id ?? null;
       }
 
-      // Record transaction
+      // Record margin transaction
       await supabase.from('wallet_transactions').insert({
         user_id: order.user_id,
         type: 'trade',
         amount: margin,
         currency: 'USD',
         status: 'Completed',
-        reference_id: null,
+        reference_id: positionRefId,
       });
+      if (openBrokerage > 0) {
+        await supabase.from('wallet_transactions').insert({
+          user_id: order.user_id,
+          type: 'brokerage' as any,
+          amount: openBrokerage,
+          currency: 'USD',
+          status: 'Completed',
+          reference_id: positionRefId,
+        });
+      }
 
       // Mark limit order as executed
       await supabase
