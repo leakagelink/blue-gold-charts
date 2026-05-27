@@ -980,6 +980,10 @@ const Positions = () => {
         : computedPnl;
 
       const closedAt = new Date().toISOString();
+      const closeBrokerage = reason === 'liquidation'
+        ? 0
+        : +(closePrice * quantity * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalBrokerage = Number(position.brokerage || 0) + closeBrokerage;
 
       // Close position in database - use status check to prevent double close
       const { data: updateResult, error } = await supabase
@@ -989,8 +993,9 @@ const Positions = () => {
           closed_at: closedAt,
           close_price: closePrice,
           pnl: pnl,
-          closed_by: user?.id
-        })
+          closed_by: user?.id,
+          brokerage: totalBrokerage,
+        } as any)
         .eq('id', position.id)
         .eq('status', 'open')
         .select();
@@ -1008,7 +1013,8 @@ const Positions = () => {
         status: 'closed',
         closed_at: closedAt,
         close_price: closePrice,
-        pnl: pnl
+        pnl: pnl,
+        brokerage: totalBrokerage,
       };
       
       setClosedPositions(prev => {
@@ -1032,7 +1038,7 @@ const Positions = () => {
 
       if (!walletError && wallet) {
         const currentBalance = wallet.balance || 0;
-        const finalAmount = position.margin + pnl;
+        const finalAmount = position.margin + pnl - closeBrokerage;
         const newBalance = currentBalance + finalAmount;
 
         await supabase
@@ -1041,7 +1047,7 @@ const Positions = () => {
           .eq('user_id', user?.id)
           .eq('currency', 'USD');
 
-        // Record transaction
+        // Record settlement
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
@@ -1050,6 +1056,16 @@ const Positions = () => {
           status: 'Completed',
           reference_id: position.id
         });
+        if (closeBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: closeBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: position.id
+          });
+        }
       }
 
       if (reason === 'stop_loss') {
