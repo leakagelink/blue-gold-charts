@@ -877,9 +877,11 @@ const Trading = () => {
       }
 
       const currentBalance = wallet?.balance || 0;
-      
-      if (currentBalance < margin) {
-        toast.error(`Insufficient balance. Required: $${margin.toFixed(2)}, Available: $${currentBalance.toFixed(2)}`);
+      const openBrokerage = +(usdAmount * (brokeragePct / 100)).toFixed(4);
+      const totalRequired = margin + openBrokerage;
+
+      if (currentBalance < totalRequired) {
+        toast.error(`Insufficient balance. Required: $${totalRequired.toFixed(2)} (Margin $${margin.toFixed(2)} + Brokerage $${openBrokerage.toFixed(2)}), Available: $${currentBalance.toFixed(2)}`);
         return;
       }
 
