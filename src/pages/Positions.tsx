@@ -1072,7 +1072,7 @@ const Positions = () => {
 
     return (
       <div
-        className={`relative px-3 py-3 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
+        className={`relative px-2.5 py-2.5 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
           isClosedSuccess ? 'scale-95 opacity-0' : ''
         } ${isClosing ? 'opacity-60' : ''} ${isSelected ? 'bg-primary/[0.04]' : 'bg-card hover:bg-muted/30'}`}
       >
@@ -1090,44 +1090,44 @@ const Positions = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Checkbox */}
           {selectable && (
             <button
               onClick={() => toggleSelected(position.id)}
-              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+              className={`shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all ${
                 isSelected
                   ? 'bg-[hsl(var(--gold))] border-[hsl(var(--gold))] text-gold-foreground'
                   : 'bg-card border-border hover:border-[hsl(var(--gold))]'
               }`}
               aria-label={isSelected ? 'Deselect' : 'Select'}
             >
-              {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={3} />}
+              {isSelected && <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={3} />}
             </button>
           )}
 
           {/* Symbol + prices */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <h3 className="font-bold text-[13px] sm:text-base text-primary tracking-tight truncate max-w-[140px] sm:max-w-none">
                 {position.symbol}
               </h3>
-              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>
+              <span className={`px-1.5 py-[1px] rounded-md text-[9px] sm:text-[10px] font-bold border ${sideColor}`}>
                 {sideLabel}
               </span>
               <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">
                 {position.leverage}x
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
-              <span>{entry}</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-muted-foreground font-mono min-w-0">
+              <span className="truncate">{entry}</span>
               {isLong ? (
-                <ArrowUp className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
+                <ArrowUp className="h-3 w-3 text-emerald-500 shrink-0" strokeWidth={2.5} />
               ) : (
-                <ArrowDown className="h-3 w-3 text-red-500" strokeWidth={2.5} />
+                <ArrowDown className="h-3 w-3 text-red-500 shrink-0" strokeWidth={2.5} />
               )}
               <span
-                className={`transition-all px-1 rounded ${
+                className={`transition-all px-1 rounded truncate ${
                   position.status !== 'closed' && priceChange?.flash
                     ? priceChange.direction === 'up'
                       ? 'bg-emerald-500/15 text-emerald-600'
@@ -1140,18 +1140,18 @@ const Positions = () => {
             </div>
           </div>
 
-          {/* Lot */}
-          <div className="text-center shrink-0 min-w-[44px]">
-            <p className="text-sm font-bold text-primary tabular-nums">{lot}</p>
+          {/* Lot — hidden on very small screens to save space */}
+          <div className="hidden xs:block text-center shrink-0 min-w-[38px] sm:min-w-[44px]">
+            <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">{lot}</p>
             <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Lot</p>
           </div>
 
           {/* PnL */}
-          <div className="text-right shrink-0 min-w-[80px]">
-            <p className={`text-base sm:text-lg font-bold tabular-nums ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
+          <div className="text-right shrink-0 min-w-[64px] sm:min-w-[80px]">
+            <p className={`text-sm sm:text-lg font-bold tabular-nums leading-tight ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
               {isProfit ? '+' : ''}{formatLivePnl(pnl)}
             </p>
-            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold truncate">
               ${position.margin.toFixed(0)} margin
             </p>
           </div>
@@ -1160,17 +1160,17 @@ const Positions = () => {
           {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
             <button
               onClick={() => setClosePositionId(position.id)}
-              className="shrink-0 w-8 h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
+              className="shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
               aria-label="Close position"
             >
-              <X className="h-4 w-4" strokeWidth={2.5} />
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
             </button>
           )}
         </div>
 
         {/* SL/TP strip */}
         {(position.stop_loss || position.take_profit) && (
-          <div className="flex items-center gap-3 mt-2 pl-9 text-[10px] font-medium">
+          <div className="flex items-center gap-3 mt-2 pl-7 sm:pl-9 text-[10px] font-medium flex-wrap">
             {position.stop_loss && (
               <span className="flex items-center gap-1 text-red-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
@@ -1194,20 +1194,20 @@ const Positions = () => {
     const sideLabel = isLong ? 'BUY' : 'SELL';
     const sideColor = isLong ? 'text-emerald-600 border-emerald-500/40 bg-emerald-500/10' : 'text-red-500 border-red-500/40 bg-red-500/10';
     return (
-      <div className="px-3 py-3 sm:px-4 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
-        <div className="flex items-center gap-3">
+      <div className="px-2.5 py-2.5 sm:px-4 sm:py-3 border-b border-border/60 bg-card hover:bg-muted/30 transition-colors">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight">{order.symbol}</h3>
-              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <h3 className="font-bold text-[13px] sm:text-base text-primary tracking-tight truncate max-w-[140px] sm:max-w-none">{order.symbol}</h3>
+              <span className={`px-1.5 py-[1px] rounded-md text-[9px] sm:text-[10px] font-bold border ${sideColor}`}>{sideLabel}</span>
               <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">{order.leverage}x</span>
             </div>
-            <p className="text-[11px] text-muted-foreground font-mono">
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-mono truncate">
               Limit @ {formatMarketPrice(order.limit_price)}
             </p>
           </div>
-          <div className="text-center shrink-0 min-w-[44px]">
-            <p className="text-sm font-bold text-primary tabular-nums">
+          <div className="hidden xs:block text-center shrink-0 min-w-[38px] sm:min-w-[44px]">
+            <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">
               {order.lot_size ? Number(order.lot_size).toFixed(2) : Number(order.amount ?? 0).toFixed(2)}
             </p>
             <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
@@ -1215,7 +1215,7 @@ const Positions = () => {
             </p>
           </div>
           <div className="shrink-0">
-            <span className="text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-2 py-1 rounded-md">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[hsl(var(--gold))] bg-[hsl(var(--gold))]/10 px-1.5 sm:px-2 py-1 rounded-md">
               Pending
             </span>
           </div>
@@ -1319,19 +1319,19 @@ const Positions = () => {
       <main className="relative z-10 animate-fade-in">
         {/* Compact portfolio strip (open tab only) */}
         {activeTab === "open" && openPositions.length > 0 && (
-          <div className="px-4 py-3 bg-card border-b border-border flex items-center justify-between">
-            <div>
+          <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-card border-b border-border flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Floating P&L</p>
-              <p className={`text-xl font-bold tabular-nums ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
+              <p className={`text-lg sm:text-xl font-bold tabular-nums truncate ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
                 {totalIsProfit ? "+" : ""}${totalPnL.toFixed(2)}
-                <span className="ml-1.5 text-xs font-semibold">
+                <span className="ml-1.5 text-[11px] sm:text-xs font-semibold">
                   ({totalIsProfit ? "+" : ""}{pnlPct.toFixed(2)}%)
                 </span>
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Margin</p>
-              <p className="text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
+              <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
             </div>
           </div>
         )}
@@ -1511,31 +1511,31 @@ const Positions = () => {
 
       {/* Sticky action bar (above BottomNav) — Position tab only */}
       {activeTab === "open" && openPositions.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-4px_20px_-8px_hsl(220_30%_20%/0.15)]">
-          <div className="flex items-center justify-between px-3 py-2.5 gap-2">
+        <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-4px_20px_-8px_hsl(220_30%_20%/0.15)]">
+          <div className="flex items-center justify-between px-2 sm:px-3 py-2 sm:py-2.5 gap-1.5 sm:gap-2">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-sm font-bold text-primary px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-primary px-1.5 sm:px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
             >
-              <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+              <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                 allSelected ? "bg-[hsl(var(--gold))] border-[hsl(var(--gold))]" : "border-border bg-card"
               }`}>
-                {allSelected && <CheckCircle2 className="h-3 w-3 text-gold-foreground" strokeWidth={3} />}
+                {allSelected && <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gold-foreground" strokeWidth={3} />}
               </span>
-              Select All
+              <span className="whitespace-nowrap">Select All</span>
             </button>
 
             <button
               onClick={() => setShowFilters(v => !v)}
-              className="flex items-center gap-1.5 text-sm font-bold text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-bold text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors"
             >
-              <Filter className="h-4 w-4" /> Custom
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Custom
             </button>
 
             <button
               onClick={handleBulkClose}
               disabled={selectedIds.size === 0 || bulkClosing}
-              className="h-10 px-6 rounded-full bg-[hsl(var(--gold))] text-gold-foreground font-bold text-sm shadow-sm hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="h-9 sm:h-10 px-4 sm:px-6 rounded-full bg-[hsl(var(--gold))] text-gold-foreground font-bold text-xs sm:text-sm shadow-sm hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 whitespace-nowrap"
             >
               {bulkClosing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
