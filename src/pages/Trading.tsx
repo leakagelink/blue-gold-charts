@@ -952,6 +952,7 @@ const Trading = () => {
         const finalStopLoss = stopLossValue ?? (existingPosition.stop_loss ? Number(existingPosition.stop_loss) : null);
         const finalTakeProfit = takeProfitValue ?? (existingPosition.take_profit ? Number(existingPosition.take_profit) : null);
 
+        const newBrokerage = Number(existingPosition.brokerage || 0) + openBrokerage;
         const { error: avgError } = await supabase
           .from('positions')
           .update({
@@ -962,6 +963,7 @@ const Trading = () => {
             leverage: newLeverage,
             stop_loss: finalStopLoss,
             take_profit: finalTakeProfit,
+            brokerage: newBrokerage,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingPosition.id)
@@ -977,17 +979,28 @@ const Trading = () => {
           throw avgError;
         }
 
-        // Record transaction
+        // Record margin transaction
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
           amount: margin,
           currency: 'USD',
           status: 'Completed',
-          reference_id: null
+          reference_id: existingPosition.id
         });
+        // Record brokerage charge
+        if (openBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: openBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: existingPosition.id
+          });
+        }
 
-        toast.success(`Averaged into existing ${type === 'long' ? 'BUY' : 'SELL'} position: +${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}. New avg entry: $${newAvgEntryPrice.toFixed(2)}, Total margin: $${newTotalMargin.toFixed(2)}`);
+        toast.success(`Averaged into existing ${type === 'long' ? 'BUY' : 'SELL'} position: +${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}. Brokerage: $${openBrokerage.toFixed(2)}`);
       } else {
         // CREATE NEW POSITION
         const { error } = await supabase.from('positions').insert({
