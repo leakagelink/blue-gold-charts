@@ -904,9 +904,9 @@ const Positions = () => {
         console.error('Error fetching wallet:', walletError);
       } else {
         const currentBalance = wallet?.balance || 0;
-        
-        // Return margin + PnL to wallet
-        const finalAmount = position.margin + pnl;
+
+        // Return margin + PnL minus exit brokerage
+        const finalAmount = position.margin + pnl - closeBrokerage;
         const newBalance = currentBalance + finalAmount;
 
         await supabase
@@ -915,7 +915,7 @@ const Positions = () => {
           .eq('user_id', user?.id)
           .eq('currency', 'USD');
 
-        // Record transaction
+        // Record settlement transaction (margin + PnL net of brokerage)
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
@@ -924,9 +924,20 @@ const Positions = () => {
           status: 'Completed',
           reference_id: position.id
         });
+        // Record exit brokerage separately
+        if (closeBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: closeBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: position.id
+          });
+        }
       }
 
-      toast.success(`Position closed: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} PnL. Wallet updated with $${(position.margin + pnl).toFixed(2)}`);
+      toast.success(`Position closed: PnL ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} • Brokerage $${closeBrokerage.toFixed(2)}`);
       setClosePositionId(null);
     } catch (error) {
       console.error('Error closing position:', error);
