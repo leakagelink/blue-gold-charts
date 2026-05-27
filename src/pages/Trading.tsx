@@ -351,9 +351,10 @@ const Trading = () => {
     const fetchLeverageCap = async () => {
       if (!user?.id) return;
       try {
-        const [profileRes, settingRes] = await Promise.all([
+        const [profileRes, settingRes, brokerageRes] = await Promise.all([
           supabase.from('profiles').select('max_leverage').eq('id', user.id).maybeSingle(),
           supabase.from('payment_settings').select('setting_value').eq('setting_key', 'max_leverage').maybeSingle(),
+          supabase.from('payment_settings').select('setting_value').eq('setting_key', 'brokerage_percentage').maybeSingle(),
         ]);
         const perUser = (profileRes.data as any)?.max_leverage as number | null | undefined;
         const global = parseInt((settingRes.data as any)?.setting_value || '100');
@@ -361,6 +362,8 @@ const Trading = () => {
         const clamped = Math.max(1, Math.min(100, effective));
         setMaxLeverageCap(clamped);
         setLeverage((prev) => Math.min(prev, clamped));
+        const bp = parseFloat((brokerageRes.data as any)?.setting_value || '0.05');
+        setBrokeragePct(isNaN(bp) ? 0.05 : Math.max(0, bp));
       } catch (e) {
         console.error('Failed to fetch leverage cap', e);
       }
