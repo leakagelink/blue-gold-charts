@@ -39,6 +39,7 @@ interface Position {
   price_mode?: string;
   stop_loss?: number | null;
   take_profit?: number | null;
+  brokerage?: number;
 }
 
 const PRICE_POLL_INTERVAL_MS = 20;
