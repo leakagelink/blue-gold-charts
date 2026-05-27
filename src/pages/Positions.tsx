@@ -39,6 +39,7 @@ interface Position {
   price_mode?: string;
   stop_loss?: number | null;
   take_profit?: number | null;
+  brokerage?: number;
 }
 
 const PRICE_POLL_INTERVAL_MS = 20;
@@ -118,6 +119,9 @@ const Positions = () => {
   const closedSuccessIdRef = useRef<string | null>(null);
   // Track permanently closed positions to prevent re-adding during price updates
   const permanentlyClosedIdsRef = useRef<Set<string>>(new Set());
+  // Brokerage % per side (loaded from broker settings)
+  const brokeragePctRef = useRef<number>(0.05);
+  
   
   // Keep refs in sync with state
   useEffect(() => {
@@ -605,20 +609,22 @@ const Positions = () => {
         .maybeSingle();
 
       const currentBalance = wallet?.balance || 0;
-      if (currentBalance < margin) {
+      const openBrokerage = +(usdAmount * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalRequired = margin + openBrokerage;
+      if (currentBalance < totalRequired) {
         // Mark as cancelled due to insufficient balance
         await supabase
           .from('limit_orders')
           .update({ status: 'cancelled' as any, updated_at: new Date().toISOString() })
           .eq('id', order.id);
-        toast.error(`Limit order for ${order.symbol} cancelled - insufficient balance`);
+        toast.error(`Limit order for ${order.symbol} cancelled - insufficient balance (need $${totalRequired.toFixed(2)})`);
         return;
       }
 
-      // Deduct margin
+      // Deduct margin + brokerage
       await supabase
         .from('user_wallets')
-        .update({ balance: currentBalance - margin })
+        .update({ balance: currentBalance - totalRequired })
         .eq('user_id', order.user_id)
         .eq('currency', 'USD');
 
@@ -632,6 +638,8 @@ const Positions = () => {
         .eq('status', 'open')
         .maybeSingle();
 
+      let positionRefId: string | null = null;
+
       if (existingPosition) {
         const oldAmount = Number(existingPosition.amount);
         const oldEntryPrice = Number(existingPosition.entry_price);
@@ -640,6 +648,7 @@ const Positions = () => {
         const newAvgEntryPrice = ((oldAmount * oldEntryPrice) + (assetQuantity * entryPrice)) / newTotalAmount;
         const newTotalMargin = oldMargin + margin;
         const newLeverage = Math.round((newTotalAmount * newAvgEntryPrice) / newTotalMargin);
+        const newBrokerage = Number((existingPosition as any).brokerage || 0) + openBrokerage;
 
         await supabase
           .from('positions')
@@ -651,11 +660,13 @@ const Positions = () => {
             leverage: newLeverage,
             stop_loss: order.stop_loss ?? existingPosition.stop_loss,
             take_profit: order.take_profit ?? existingPosition.take_profit,
+            brokerage: newBrokerage,
             updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq('id', existingPosition.id);
+        positionRefId = existingPosition.id;
       } else {
-        await supabase.from('positions').insert({
+        const { data: newPos } = await supabase.from('positions').insert({
           user_id: order.user_id,
           symbol: order.symbol,
           position_type: order.position_type,
@@ -667,18 +678,30 @@ const Positions = () => {
           status: 'open',
           stop_loss: order.stop_loss,
           take_profit: order.take_profit,
-        });
+          brokerage: openBrokerage,
+        } as any).select('id').maybeSingle();
+        positionRefId = newPos?.id ?? null;
       }
 
-      // Record transaction
+      // Record margin transaction
       await supabase.from('wallet_transactions').insert({
         user_id: order.user_id,
         type: 'trade',
         amount: margin,
         currency: 'USD',
         status: 'Completed',
-        reference_id: null,
+        reference_id: positionRefId,
       });
+      if (openBrokerage > 0) {
+        await supabase.from('wallet_transactions').insert({
+          user_id: order.user_id,
+          type: 'brokerage' as any,
+          amount: openBrokerage,
+          currency: 'USD',
+          status: 'Completed',
+          reference_id: positionRefId,
+        });
+      }
 
       // Mark limit order as executed
       await supabase
@@ -781,9 +804,20 @@ const Positions = () => {
       if (openError) throw openError;
       if (closedError) throw closedError;
 
-      setOpenPositions(open || []);
-      setClosedPositions(closed || []);
+      setOpenPositions((open || []) as any);
+      setClosedPositions((closed || []) as any);
       setPendingOrders(pending || []);
+
+      // Load brokerage % setting
+      try {
+        const { data: bp } = await supabase
+          .from('payment_settings')
+          .select('setting_value')
+          .eq('setting_key', 'brokerage_percentage')
+          .maybeSingle();
+        const v = parseFloat((bp as any)?.setting_value || '0.05');
+        brokeragePctRef.current = isNaN(v) ? 0.05 : Math.max(0, v);
+      } catch {}
     } catch (error) {
       console.error('Error fetching positions:', error);
       toast.error('Failed to load positions');
@@ -818,6 +852,8 @@ const Positions = () => {
         : (position.entry_price - closePrice) * quantity;
 
       const closedAt = new Date().toISOString();
+      const closeBrokerage = +(closePrice * quantity * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalBrokerage = Number(position.brokerage || 0) + closeBrokerage;
 
       // Close position in database - use status check to prevent double close
       const { data: updateResult, error } = await supabase
@@ -827,8 +863,9 @@ const Positions = () => {
           closed_at: closedAt,
           close_price: closePrice,
           pnl: pnl,
-          closed_by: user?.id
-        })
+          closed_by: user?.id,
+          brokerage: totalBrokerage,
+        } as any)
         .eq('id', position.id)
         .eq('status', 'open') // CRITICAL: Only update if still open
         .select();
@@ -857,7 +894,8 @@ const Positions = () => {
         status: 'closed',
         closed_at: closedAt,
         close_price: closePrice,
-        pnl: pnl
+        pnl: pnl,
+        brokerage: totalBrokerage,
       };
       
       setClosedPositions(prev => {
@@ -885,9 +923,9 @@ const Positions = () => {
         console.error('Error fetching wallet:', walletError);
       } else {
         const currentBalance = wallet?.balance || 0;
-        
-        // Return margin + PnL to wallet
-        const finalAmount = position.margin + pnl;
+
+        // Return margin + PnL minus exit brokerage
+        const finalAmount = position.margin + pnl - closeBrokerage;
         const newBalance = currentBalance + finalAmount;
 
         await supabase
@@ -896,7 +934,7 @@ const Positions = () => {
           .eq('user_id', user?.id)
           .eq('currency', 'USD');
 
-        // Record transaction
+        // Record settlement transaction (margin + PnL net of brokerage)
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
@@ -905,9 +943,20 @@ const Positions = () => {
           status: 'Completed',
           reference_id: position.id
         });
+        // Record exit brokerage separately
+        if (closeBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: closeBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: position.id
+          });
+        }
       }
 
-      toast.success(`Position closed: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} PnL. Wallet updated with $${(position.margin + pnl).toFixed(2)}`);
+      toast.success(`Position closed: PnL ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} • Brokerage $${closeBrokerage.toFixed(2)}`);
       setClosePositionId(null);
     } catch (error) {
       console.error('Error closing position:', error);
@@ -950,6 +999,10 @@ const Positions = () => {
         : computedPnl;
 
       const closedAt = new Date().toISOString();
+      const closeBrokerage = reason === 'liquidation'
+        ? 0
+        : +(closePrice * quantity * (brokeragePctRef.current / 100)).toFixed(4);
+      const totalBrokerage = Number(position.brokerage || 0) + closeBrokerage;
 
       // Close position in database - use status check to prevent double close
       const { data: updateResult, error } = await supabase
@@ -959,8 +1012,9 @@ const Positions = () => {
           closed_at: closedAt,
           close_price: closePrice,
           pnl: pnl,
-          closed_by: user?.id
-        })
+          closed_by: user?.id,
+          brokerage: totalBrokerage,
+        } as any)
         .eq('id', position.id)
         .eq('status', 'open')
         .select();
@@ -978,7 +1032,8 @@ const Positions = () => {
         status: 'closed',
         closed_at: closedAt,
         close_price: closePrice,
-        pnl: pnl
+        pnl: pnl,
+        brokerage: totalBrokerage,
       };
       
       setClosedPositions(prev => {
@@ -1002,7 +1057,7 @@ const Positions = () => {
 
       if (!walletError && wallet) {
         const currentBalance = wallet.balance || 0;
-        const finalAmount = position.margin + pnl;
+        const finalAmount = position.margin + pnl - closeBrokerage;
         const newBalance = currentBalance + finalAmount;
 
         await supabase
@@ -1011,7 +1066,7 @@ const Positions = () => {
           .eq('user_id', user?.id)
           .eq('currency', 'USD');
 
-        // Record transaction
+        // Record settlement
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
@@ -1020,6 +1075,16 @@ const Positions = () => {
           status: 'Completed',
           reference_id: position.id
         });
+        if (closeBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: closeBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: position.id
+          });
+        }
       }
 
       if (reason === 'stop_loss') {
@@ -1183,6 +1248,14 @@ const Positions = () => {
                 TP ${formatMarketPrice(position.take_profit)}
               </span>
             )}
+          </div>
+        )}
+
+        {/* Brokerage strip */}
+        {Number(position.brokerage || 0) > 0 && (
+          <div className="flex items-center gap-1 mt-1.5 pl-7 sm:pl-9 text-[10px] font-medium text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span>Brokerage: <span className="text-amber-600 font-semibold">${Number(position.brokerage).toFixed(2)}</span></span>
           </div>
         )}
       </div>

@@ -317,6 +317,7 @@ const Trading = () => {
   const [pendingOrder, setPendingOrder] = useState<'long' | 'short' | null>(null);
   const [submittingOrder, setSubmittingOrder] = useState(false);
   const [maxLeverageCap, setMaxLeverageCap] = useState<number>(100);
+  const [brokeragePct, setBrokeragePct] = useState<number>(0.05);
   const [chartScale, setChartScale] = useState(1);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -350,9 +351,10 @@ const Trading = () => {
     const fetchLeverageCap = async () => {
       if (!user?.id) return;
       try {
-        const [profileRes, settingRes] = await Promise.all([
+        const [profileRes, settingRes, brokerageRes] = await Promise.all([
           supabase.from('profiles').select('max_leverage').eq('id', user.id).maybeSingle(),
           supabase.from('payment_settings').select('setting_value').eq('setting_key', 'max_leverage').maybeSingle(),
+          supabase.from('payment_settings').select('setting_value').eq('setting_key', 'brokerage_percentage').maybeSingle(),
         ]);
         const perUser = (profileRes.data as any)?.max_leverage as number | null | undefined;
         const global = parseInt((settingRes.data as any)?.setting_value || '100');
@@ -360,6 +362,8 @@ const Trading = () => {
         const clamped = Math.max(1, Math.min(100, effective));
         setMaxLeverageCap(clamped);
         setLeverage((prev) => Math.min(prev, clamped));
+        const bp = parseFloat((brokerageRes.data as any)?.setting_value || '0.05');
+        setBrokeragePct(isNaN(bp) ? 0.05 : Math.max(0, bp));
       } catch (e) {
         console.error('Failed to fetch leverage cap', e);
       }
@@ -873,9 +877,11 @@ const Trading = () => {
       }
 
       const currentBalance = wallet?.balance || 0;
-      
-      if (currentBalance < margin) {
-        toast.error(`Insufficient balance. Required: $${margin.toFixed(2)}, Available: $${currentBalance.toFixed(2)}`);
+      const openBrokerage = +(usdAmount * (brokeragePct / 100)).toFixed(4);
+      const totalRequired = margin + openBrokerage;
+
+      if (currentBalance < totalRequired) {
+        toast.error(`Insufficient balance. Required: $${totalRequired.toFixed(2)} (Margin $${margin.toFixed(2)} + Brokerage $${openBrokerage.toFixed(2)}), Available: $${currentBalance.toFixed(2)}`);
         return;
       }
 
@@ -919,10 +925,10 @@ const Trading = () => {
         console.error('Error checking existing position:', existingError);
       }
 
-      // Deduct margin from wallet
+      // Deduct margin + brokerage from wallet
       const { error: updateError } = await supabase
         .from('user_wallets')
-        .update({ balance: currentBalance - margin })
+        .update({ balance: currentBalance - totalRequired })
         .eq('user_id', user?.id)
         .eq('currency', 'USD');
 
@@ -946,6 +952,7 @@ const Trading = () => {
         const finalStopLoss = stopLossValue ?? (existingPosition.stop_loss ? Number(existingPosition.stop_loss) : null);
         const finalTakeProfit = takeProfitValue ?? (existingPosition.take_profit ? Number(existingPosition.take_profit) : null);
 
+        const newBrokerage = Number(existingPosition.brokerage || 0) + openBrokerage;
         const { error: avgError } = await supabase
           .from('positions')
           .update({
@@ -956,6 +963,7 @@ const Trading = () => {
             leverage: newLeverage,
             stop_loss: finalStopLoss,
             take_profit: finalTakeProfit,
+            brokerage: newBrokerage,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingPosition.id)
@@ -971,20 +979,31 @@ const Trading = () => {
           throw avgError;
         }
 
-        // Record transaction
+        // Record margin transaction
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
           amount: margin,
           currency: 'USD',
           status: 'Completed',
-          reference_id: null
+          reference_id: existingPosition.id
         });
+        // Record brokerage charge
+        if (openBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: openBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: existingPosition.id
+          });
+        }
 
-        toast.success(`Averaged into existing ${type === 'long' ? 'BUY' : 'SELL'} position: +${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}. New avg entry: $${newAvgEntryPrice.toFixed(2)}, Total margin: $${newTotalMargin.toFixed(2)}`);
+        toast.success(`Averaged into existing ${type === 'long' ? 'BUY' : 'SELL'} position: +${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}. Brokerage: $${openBrokerage.toFixed(2)}`);
       } else {
         // CREATE NEW POSITION
-        const { error } = await supabase.from('positions').insert({
+        const { data: newPos, error } = await supabase.from('positions').insert({
           user_id: user?.id,
           symbol: symbol?.toUpperCase(),
           position_type: type,
@@ -995,8 +1014,9 @@ const Trading = () => {
           margin: margin,
           status: 'open',
           stop_loss: stopLossValue,
-          take_profit: takeProfitValue
-        });
+          take_profit: takeProfitValue,
+          brokerage: openBrokerage,
+        } as any).select('id').maybeSingle();
 
         if (error) {
           await supabase
@@ -1007,19 +1027,30 @@ const Trading = () => {
           throw error;
         }
 
-        // Record transaction
+        // Record margin transaction
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
           amount: margin,
           currency: 'USD',
           status: 'Completed',
-          reference_id: null
+          reference_id: newPos?.id ?? null
         });
+        // Record brokerage charge
+        if (openBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: openBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: newPos?.id ?? null
+          });
+        }
 
         const slMessage = stopLossValue ? ` | SL: $${stopLossValue.toFixed(2)}` : '';
         const tpMessage = takeProfitValue ? ` | TP: $${takeProfitValue.toFixed(2)}` : '';
-        toast.success(`${type === 'long' ? 'BUY' : 'SELL'} position opened: ${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}${slMessage}${tpMessage}. Margin: $${margin.toFixed(2)}`);
+        toast.success(`${type === 'long' ? 'BUY' : 'SELL'} opened: ${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}${slMessage}${tpMessage}. Margin $${margin.toFixed(2)} • Brokerage $${openBrokerage.toFixed(2)}`);
       }
 
       setTradeAmount("");

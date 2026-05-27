@@ -372,6 +372,7 @@ export type Database = {
       positions: {
         Row: {
           amount: number
+          brokerage: number
           close_price: number | null
           closed_at: string | null
           closed_by: string | null
@@ -397,6 +398,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          brokerage?: number
           close_price?: number | null
           closed_at?: string | null
           closed_by?: string | null
@@ -422,6 +424,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          brokerage?: number
           close_price?: number | null
           closed_at?: string | null
           closed_by?: string | null
@@ -911,7 +914,7 @@ export type Database = {
       payment_method: "upi" | "netbanking"
       position_status: "open" | "closed"
       position_type: "long" | "short"
-      transaction_type: "deposit" | "withdrawal" | "trade"
+      transaction_type: "deposit" | "withdrawal" | "trade" | "brokerage"
       withdrawal_status: "pending" | "approved" | "rejected" | "processing"
     }
     CompositeTypes: {
@@ -1047,7 +1050,7 @@ export const Constants = {
       payment_method: ["upi", "netbanking"],
       position_status: ["open", "closed"],
       position_type: ["long", "short"],
-      transaction_type: ["deposit", "withdrawal", "trade"],
+      transaction_type: ["deposit", "withdrawal", "trade", "brokerage"],
       withdrawal_status: ["pending", "approved", "rejected", "processing"],
     },
   },

@@ -131,6 +131,7 @@ const AdminPanel = () => {
     appDownloadUrl: "",
     apiPassword: "",
     maxLeverage: "100",
+    brokeragePercentage: "0.05",
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [uploadingQr, setUploadingQr] = useState(false);
@@ -317,6 +318,7 @@ const AdminPanel = () => {
           appDownloadUrl: settings.appDownloadUrl || "",
           apiPassword: "",
           maxLeverage: settings.maxLeverage || "100",
+          brokeragePercentage: settings.brokeragePercentage || "0.05",
         });
         
         // Set deposit offer settings
@@ -967,7 +969,8 @@ const AdminPanel = () => {
         { setting_key: "bank_name", setting_value: paymentSettings.bankName },
         { setting_key: "exchange_rate", setting_value: (1 / parseFloat(paymentSettings.exchangeRate || "96")).toFixed(8) },
         { setting_key: "app_download_url", setting_value: paymentSettings.appDownloadUrl },
-        { setting_key: "max_leverage", setting_value: paymentSettings.maxLeverage || "100" },
+       { setting_key: "max_leverage", setting_value: paymentSettings.maxLeverage || "100" },
+       { setting_key: "brokerage_percentage", setting_value: paymentSettings.brokeragePercentage || "0.05" },
         // Deposit offer settings
         { setting_key: "deposit_bonus_enabled", setting_value: String(depositOfferSettings.bonusEnabled) },
         { setting_key: "deposit_bonus_percentage", setting_value: depositOfferSettings.bonusPercentage },
@@ -2147,6 +2150,27 @@ const AdminPanel = () => {
                       />
                       <p className="text-xs text-muted-foreground">
                         Default cap applied to all users (1–100). Per-user override Broker Dashboard se set kar sakte hain.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brokeragePct">Brokerage Charges (% per side)</Label>
+                      <Input
+                        id="brokeragePct"
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="5"
+                        placeholder="0.05"
+                        value={paymentSettings.brokeragePercentage}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "") { setPaymentSettings({ ...paymentSettings, brokeragePercentage: "" }); return; }
+                          const n = Math.max(0, Math.min(5, parseFloat(v) || 0));
+                          setPaymentSettings({ ...paymentSettings, brokeragePercentage: n.toString() });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Har trade par open & close dono pe % charge hota hai (e.g. 0.05% = $0.05 per $100 turnover).
                       </p>
                     </div>
                   </div>
