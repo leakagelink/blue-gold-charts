@@ -1003,7 +1003,7 @@ const Trading = () => {
         toast.success(`Averaged into existing ${type === 'long' ? 'BUY' : 'SELL'} position: +${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}. Brokerage: $${openBrokerage.toFixed(2)}`);
       } else {
         // CREATE NEW POSITION
-        const { error } = await supabase.from('positions').insert({
+        const { data: newPos, error } = await supabase.from('positions').insert({
           user_id: user?.id,
           symbol: symbol?.toUpperCase(),
           position_type: type,
@@ -1014,8 +1014,9 @@ const Trading = () => {
           margin: margin,
           status: 'open',
           stop_loss: stopLossValue,
-          take_profit: takeProfitValue
-        });
+          take_profit: takeProfitValue,
+          brokerage: openBrokerage,
+        } as any).select('id').maybeSingle();
 
         if (error) {
           await supabase
@@ -1026,19 +1027,30 @@ const Trading = () => {
           throw error;
         }
 
-        // Record transaction
+        // Record margin transaction
         await supabase.from('wallet_transactions').insert({
           user_id: user?.id,
           type: 'trade',
           amount: margin,
           currency: 'USD',
           status: 'Completed',
-          reference_id: null
+          reference_id: newPos?.id ?? null
         });
+        // Record brokerage charge
+        if (openBrokerage > 0) {
+          await supabase.from('wallet_transactions').insert({
+            user_id: user?.id,
+            type: 'brokerage' as any,
+            amount: openBrokerage,
+            currency: 'USD',
+            status: 'Completed',
+            reference_id: newPos?.id ?? null
+          });
+        }
 
         const slMessage = stopLossValue ? ` | SL: $${stopLossValue.toFixed(2)}` : '';
         const tpMessage = takeProfitValue ? ` | TP: $${takeProfitValue.toFixed(2)}` : '';
-        toast.success(`${type === 'long' ? 'BUY' : 'SELL'} position opened: ${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}${slMessage}${tpMessage}. Margin: $${margin.toFixed(2)}`);
+        toast.success(`${type === 'long' ? 'BUY' : 'SELL'} opened: ${assetQuantity.toFixed(6)} ${symbol?.toUpperCase()} @ $${currentPrice.toFixed(2)}${slMessage}${tpMessage}. Margin $${margin.toFixed(2)} • Brokerage $${openBrokerage.toFixed(2)}`);
       }
 
       setTradeAmount("");
