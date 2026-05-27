@@ -91,14 +91,19 @@ const Wallet = () => {
 
       const { data: tradeTxs } = await supabase
         .from("wallet_transactions").select("*").eq("user_id", user.id)
-        .eq("type", "trade").order("created_at", { ascending: false }).limit(10);
-      setTradeHistory(tradeTxs?.map((tx) => ({
-        type: "Trade",
-        amount: Number(tx.amount) >= 0 ? `+$${Number(tx.amount).toFixed(2)}` : `-$${Math.abs(Number(tx.amount)).toFixed(2)}`,
-        date: new Date(tx.created_at).toLocaleDateString(),
-        status: tx.status,
-        isProfit: Number(tx.amount) >= 0,
-      })) || []);
+        .in("type", ["trade", "brokerage" as any]).order("created_at", { ascending: false }).limit(20);
+      setTradeHistory(tradeTxs?.map((tx) => {
+        const isBrokerage = (tx.type as string) === "brokerage";
+        return {
+          type: isBrokerage ? "Brokerage" : "Trade",
+          amount: isBrokerage
+            ? `-$${Math.abs(Number(tx.amount)).toFixed(2)}`
+            : (Number(tx.amount) >= 0 ? `+$${Number(tx.amount).toFixed(2)}` : `-$${Math.abs(Number(tx.amount)).toFixed(2)}`),
+          date: new Date(tx.created_at).toLocaleDateString(),
+          status: tx.status,
+          isProfit: !isBrokerage && Number(tx.amount) >= 0,
+        };
+      }) || []);
 
       const { data: deposits, error: depositsError } = await supabase
         .from("deposit_requests").select("*").eq("user_id", user.id).is("deleted_at", null)
