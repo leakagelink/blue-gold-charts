@@ -875,7 +875,8 @@ const Positions = () => {
         status: 'closed',
         closed_at: closedAt,
         close_price: closePrice,
-        pnl: pnl
+        pnl: pnl,
+        brokerage: totalBrokerage,
       };
       
       setClosedPositions(prev => {
