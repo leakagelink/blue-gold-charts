@@ -785,9 +785,20 @@ const Positions = () => {
       if (openError) throw openError;
       if (closedError) throw closedError;
 
-      setOpenPositions(open || []);
-      setClosedPositions(closed || []);
+      setOpenPositions((open || []) as any);
+      setClosedPositions((closed || []) as any);
       setPendingOrders(pending || []);
+
+      // Load brokerage % setting
+      try {
+        const { data: bp } = await supabase
+          .from('payment_settings')
+          .select('setting_value')
+          .eq('setting_key', 'brokerage_percentage')
+          .maybeSingle();
+        const v = parseFloat((bp as any)?.setting_value || '0.05');
+        brokeragePctRef.current = isNaN(v) ? 0.05 : Math.max(0, v);
+      } catch {}
     } catch (error) {
       console.error('Error fetching positions:', error);
       toast.error('Failed to load positions');
