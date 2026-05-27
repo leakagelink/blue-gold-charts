@@ -1319,19 +1319,19 @@ const Positions = () => {
       <main className="relative z-10 animate-fade-in">
         {/* Compact portfolio strip (open tab only) */}
         {activeTab === "open" && openPositions.length > 0 && (
-          <div className="px-4 py-3 bg-card border-b border-border flex items-center justify-between">
-            <div>
+          <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-card border-b border-border flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Floating P&L</p>
-              <p className={`text-xl font-bold tabular-nums ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
+              <p className={`text-lg sm:text-xl font-bold tabular-nums truncate ${totalIsProfit ? "text-emerald-600" : "text-red-500"}`}>
                 {totalIsProfit ? "+" : ""}${totalPnL.toFixed(2)}
-                <span className="ml-1.5 text-xs font-semibold">
+                <span className="ml-1.5 text-[11px] sm:text-xs font-semibold">
                   ({totalIsProfit ? "+" : ""}{pnlPct.toFixed(2)}%)
                 </span>
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Margin</p>
-              <p className="text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
+              <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">${totalMargin.toFixed(2)}</p>
             </div>
           </div>
         )}
