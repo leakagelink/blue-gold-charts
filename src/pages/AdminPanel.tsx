@@ -969,7 +969,8 @@ const AdminPanel = () => {
         { setting_key: "bank_name", setting_value: paymentSettings.bankName },
         { setting_key: "exchange_rate", setting_value: (1 / parseFloat(paymentSettings.exchangeRate || "96")).toFixed(8) },
         { setting_key: "app_download_url", setting_value: paymentSettings.appDownloadUrl },
-        { setting_key: "max_leverage", setting_value: paymentSettings.maxLeverage || "100" },
+       { setting_key: "max_leverage", setting_value: paymentSettings.maxLeverage || "100" },
+       { setting_key: "brokerage_percentage", setting_value: paymentSettings.brokeragePercentage || "0.05" },
         // Deposit offer settings
         { setting_key: "deposit_bonus_enabled", setting_value: String(depositOfferSettings.bonusEnabled) },
         { setting_key: "deposit_bonus_percentage", setting_value: depositOfferSettings.bonusPercentage },
