@@ -1072,7 +1072,7 @@ const Positions = () => {
 
     return (
       <div
-        className={`relative px-3 py-3 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
+        className={`relative px-2.5 py-2.5 sm:px-4 sm:py-3.5 border-b border-border/60 transition-all duration-300 ${
           isClosedSuccess ? 'scale-95 opacity-0' : ''
         } ${isClosing ? 'opacity-60' : ''} ${isSelected ? 'bg-primary/[0.04]' : 'bg-card hover:bg-muted/30'}`}
       >
@@ -1090,44 +1090,44 @@ const Positions = () => {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Checkbox */}
           {selectable && (
             <button
               onClick={() => toggleSelected(position.id)}
-              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+              className={`shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all ${
                 isSelected
                   ? 'bg-[hsl(var(--gold))] border-[hsl(var(--gold))] text-gold-foreground'
                   : 'bg-card border-border hover:border-[hsl(var(--gold))]'
               }`}
               aria-label={isSelected ? 'Deselect' : 'Select'}
             >
-              {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={3} />}
+              {isSelected && <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={3} />}
             </button>
           )}
 
           {/* Symbol + prices */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-sm sm:text-base text-primary tracking-tight truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <h3 className="font-bold text-[13px] sm:text-base text-primary tracking-tight truncate max-w-[140px] sm:max-w-none">
                 {position.symbol}
               </h3>
-              <span className={`px-1.5 py-[1px] rounded-md text-[10px] font-bold border ${sideColor}`}>
+              <span className={`px-1.5 py-[1px] rounded-md text-[9px] sm:text-[10px] font-bold border ${sideColor}`}>
                 {sideLabel}
               </span>
               <span className="text-[9px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-[1px] rounded-md">
                 {position.leverage}x
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
-              <span>{entry}</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-muted-foreground font-mono min-w-0">
+              <span className="truncate">{entry}</span>
               {isLong ? (
-                <ArrowUp className="h-3 w-3 text-emerald-500" strokeWidth={2.5} />
+                <ArrowUp className="h-3 w-3 text-emerald-500 shrink-0" strokeWidth={2.5} />
               ) : (
-                <ArrowDown className="h-3 w-3 text-red-500" strokeWidth={2.5} />
+                <ArrowDown className="h-3 w-3 text-red-500 shrink-0" strokeWidth={2.5} />
               )}
               <span
-                className={`transition-all px-1 rounded ${
+                className={`transition-all px-1 rounded truncate ${
                   position.status !== 'closed' && priceChange?.flash
                     ? priceChange.direction === 'up'
                       ? 'bg-emerald-500/15 text-emerald-600'
@@ -1140,18 +1140,18 @@ const Positions = () => {
             </div>
           </div>
 
-          {/* Lot */}
-          <div className="text-center shrink-0 min-w-[44px]">
-            <p className="text-sm font-bold text-primary tabular-nums">{lot}</p>
+          {/* Lot — hidden on very small screens to save space */}
+          <div className="hidden xs:block text-center shrink-0 min-w-[38px] sm:min-w-[44px]">
+            <p className="text-xs sm:text-sm font-bold text-primary tabular-nums">{lot}</p>
             <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Lot</p>
           </div>
 
           {/* PnL */}
-          <div className="text-right shrink-0 min-w-[80px]">
-            <p className={`text-base sm:text-lg font-bold tabular-nums ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
+          <div className="text-right shrink-0 min-w-[64px] sm:min-w-[80px]">
+            <p className={`text-sm sm:text-lg font-bold tabular-nums leading-tight ${isProfit ? 'text-emerald-600' : 'text-red-500'}`}>
               {isProfit ? '+' : ''}{formatLivePnl(pnl)}
             </p>
-            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold truncate">
               ${position.margin.toFixed(0)} margin
             </p>
           </div>
@@ -1160,17 +1160,17 @@ const Positions = () => {
           {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
             <button
               onClick={() => setClosePositionId(position.id)}
-              className="shrink-0 w-8 h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
+              className="shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
               aria-label="Close position"
             >
-              <X className="h-4 w-4" strokeWidth={2.5} />
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
             </button>
           )}
         </div>
 
         {/* SL/TP strip */}
         {(position.stop_loss || position.take_profit) && (
-          <div className="flex items-center gap-3 mt-2 pl-9 text-[10px] font-medium">
+          <div className="flex items-center gap-3 mt-2 pl-7 sm:pl-9 text-[10px] font-medium flex-wrap">
             {position.stop_loss && (
               <span className="flex items-center gap-1 text-red-500">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
