@@ -2152,6 +2152,27 @@ const AdminPanel = () => {
                         Default cap applied to all users (1–100). Per-user override Broker Dashboard se set kar sakte hain.
                       </p>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brokeragePct">Brokerage Charges (% per side)</Label>
+                      <Input
+                        id="brokeragePct"
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max="5"
+                        placeholder="0.05"
+                        value={paymentSettings.brokeragePercentage}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "") { setPaymentSettings({ ...paymentSettings, brokeragePercentage: "" }); return; }
+                          const n = Math.max(0, Math.min(5, parseFloat(v) || 0));
+                          setPaymentSettings({ ...paymentSettings, brokeragePercentage: n.toString() });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Har trade par open & close dono pe % charge hota hai (e.g. 0.05% = $0.05 per $100 turnover).
+                      </p>
+                    </div>
                   </div>
                 </div>
 
