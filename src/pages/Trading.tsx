@@ -925,10 +925,10 @@ const Trading = () => {
         console.error('Error checking existing position:', existingError);
       }
 
-      // Deduct margin from wallet
+      // Deduct margin + brokerage from wallet
       const { error: updateError } = await supabase
         .from('user_wallets')
-        .update({ balance: currentBalance - margin })
+        .update({ balance: currentBalance - totalRequired })
         .eq('user_id', user?.id)
         .eq('currency', 'USD');
 
