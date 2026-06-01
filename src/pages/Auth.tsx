@@ -484,6 +484,19 @@ const Auth = () => {
                   <CheckCircle2 className="h-3 w-3 text-accent" />
                   <span>Secured with 256-bit encryption</span>
                 </div>
+
+                {appDownloadUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.open(appDownloadUrl, "_blank")}
+                    className="w-full border-primary/30 hover:bg-primary/10"
+                  >
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    Download Android App
+                    <Download className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
               </form>
             </TabsContent>
 
