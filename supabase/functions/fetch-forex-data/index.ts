@@ -179,6 +179,20 @@ serve(async (req) => {
       };
     });
 
+    // Append in-house GFX/USD synthetic instrument.
+    const gfxPrice = gfxPriceNow("GFX");
+    const gfxChange = gfxChangePct("GFX");
+    forexData.push({
+      name: `GFX/${BASE_CURRENCY}`,
+      symbol: "GFX",
+      price: gfxPrice.toFixed(4),
+      change: `${gfxChange >= 0 ? '+' : ''}${gfxChange.toFixed(2)}%`,
+      isPositive: gfxChange >= 0,
+      icon: "🏷️",
+      currencySymbol: "$",
+      fullName: "GrowFX Dollar",
+    });
+
     return new Response(
       JSON.stringify({ forexData, source }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
