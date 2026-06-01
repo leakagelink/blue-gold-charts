@@ -171,22 +171,31 @@ serve(async (req) => {
     }
 
     const requestedSymbols = normalizeRequestedSymbols(requestBody?.symbols);
-    const cacheKey = getCacheKey(requestedSymbols);
-    const cacheTtl = requestedSymbols.length > 0 ? QUOTES_CACHE_DURATION_MS : LISTINGS_CACHE_DURATION_MS;
+    // Strip GFX symbols from upstream call — they don't exist on Binance.
+    const wantsGfxc = requestedSymbols.length === 0 || requestedSymbols.includes("GFXC");
+    const binanceSymbols = requestedSymbols.filter((s) => s !== "GFXC");
+    const cacheKey = getCacheKey(binanceSymbols);
+    const cacheTtl = binanceSymbols.length > 0 ? QUOTES_CACHE_DURATION_MS : LISTINGS_CACHE_DURATION_MS;
+
+    const appendGfxc = (list: CryptoItem[]): CryptoItem[] =>
+      wantsGfxc ? [...list, buildGfxcEntry()] : list;
 
     const cached = getCachedPayload(cacheKey, cacheTtl);
     if (cached) {
-      return new Response(JSON.stringify(cached), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(cached.cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
     try {
-      const cryptoData = await fetchBinance(requestedSymbols);
+      // If client only asked for GFXC, skip Binance entirely.
+      const cryptoData = requestedSymbols.length > 0 && binanceSymbols.length === 0
+        ? []
+        : await fetchBinance(binanceSymbols);
       const payload = { cryptoData };
       setCachedPayload(cacheKey, payload);
-      return new Response(JSON.stringify(payload), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -196,13 +205,13 @@ serve(async (req) => {
 
     const stale = cacheStore.get(cacheKey)?.data;
     if (stale) {
-      return new Response(JSON.stringify(stale), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(stale.cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    return new Response(JSON.stringify({ cryptoData: [] }), {
+    return new Response(JSON.stringify({ cryptoData: appendGfxc([]) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
