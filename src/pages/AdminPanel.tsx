@@ -52,6 +52,7 @@ import AdminUserPaymentMethodsDialog from "@/components/AdminUserPaymentMethodsD
 import { AdminAuditLogDialog } from "@/components/AdminAuditLogDialog";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { ToastAction } from "@/components/ui/toast";
+import AdminAppUpload from "@/components/AdminAppUpload";
 
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
