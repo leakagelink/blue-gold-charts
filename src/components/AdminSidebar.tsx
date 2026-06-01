@@ -55,6 +55,7 @@ const transactionsItems = [
 
 const systemItems = [
   // { id: "api", title: "API Keys", icon: Settings }, // Hidden — kept for future use
+  { id: "app", title: "Mobile App", icon: Smartphone },
   { id: "settings", title: "Settings", icon: SettingsIcon },
 ];
 
