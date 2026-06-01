@@ -1,9 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gfxPriceNow, gfxChangePct, gfx24hRange } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function buildGfxcEntry(): CryptoItem {
+  const price = gfxPriceNow("GFXC");
+  const change = gfxChangePct("GFXC");
+  const { high, low } = gfx24hRange("GFXC");
+  return {
+    name: "GrowFX Coin",
+    symbol: "GFXC",
+    price: fmt(price),
+    change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+    isPositive: change >= 0,
+    logo: "",
+    currencySymbol: "$",
+    high24h: fmt(high),
+    low24h: fmt(low),
+    id: "GFXC",
+  };
+}
 
 type CryptoItem = {
   name: string;
