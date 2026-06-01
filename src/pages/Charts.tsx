@@ -310,7 +310,7 @@ export default function Charts() {
     };
   }, [symbol, tf, retryTick]);
 
-  const isCrypto = !isForexSymbol(symbol) && !isCommoditySymbol(symbol);
+  const isCrypto = !isForexSymbol(symbol) && !isCommoditySymbol(symbol) && symbol.toUpperCase() !== "GFXC";
   const [live, setLive] = useState(false);
 
   const handleLiveCandle = useCallback((c: Candle, _final: boolean) => {
