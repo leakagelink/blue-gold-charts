@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Zap,
   History,
+  Smartphone,
 } from "lucide-react";
 import {
   Sidebar,
