@@ -260,6 +260,9 @@ serve((req) => {
     let stream: ReadableStream<Uint8Array>;
     if (asset === "crypto") {
       stream = buildBinanceStream(symbolParam);
+    } else if (asset === "gfx") {
+      const sym = symbolParam.toUpperCase() as "GFX" | "GFXM" | "GFXC";
+      stream = buildPollingStream(async () => gfxPriceNow(sym));
     } else {
       const yahoo = yahooSymbolFor(asset, symbolParam);
       if (!yahoo) {
