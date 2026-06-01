@@ -48,6 +48,20 @@ const Auth = () => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [appDownloadUrl, setAppDownloadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("app_releases")
+      .select("file_url")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.file_url) setAppDownloadUrl(data.file_url);
+      });
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
