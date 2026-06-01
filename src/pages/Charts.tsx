@@ -221,10 +221,12 @@ export default function Charts() {
     const upper = symbol.toUpperCase();
     const isForex = isForexSymbol(upper);
     const isCommodity = isCommoditySymbol(upper);
+    const isGfxCrypto = upper === "GFXC"; // in-house crypto, no Binance feed
     const key = `${upper}:${tf}`;
 
     const fetchOnce = (): Promise<any> => {
-      if (isCommodity) {
+      if (isCommodity || isGfxCrypto) {
+        // GFXC routed through the commodity chart endpoint which handles GFX synth.
         return supabase.functions.invoke("fetch-commodity-chart-data", {
           body: { symbol: upper, interval: tf },
         });
