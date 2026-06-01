@@ -54,9 +54,10 @@ const SYMBOL_META: Record<string, { name: string; id: number }> = {
   SUI: { name: 'Sui', id: 20947 },
   TON: { name: 'Toncoin', id: 11419 },
   ICP: { name: 'Internet Computer', id: 8916 },
+  ZEC: { name: 'Zcash', id: 1437 },
 };
 
-const TOP_SYMBOLS = ['BTC','ETH','USDT','XRP','BNB','SOL','USDC','DOGE','ADA','TRX','LINK','AVAX','DOT','LTC','BCH','SHIB','NEAR','UNI','ATOM','XLM'];
+const TOP_SYMBOLS = ['BTC','ETH','USDT','XRP','BNB','SOL','USDC','DOGE','ADA','TRX','LINK','AVAX','DOT','LTC','BCH','SHIB','NEAR','UNI','ATOM','XLM','ZEC'];
 
 function fmt(n: number): string {
   if (!isFinite(n)) return '0';
