@@ -1175,6 +1175,7 @@ const AdminPanel = () => {
                 <TabsTrigger value="kyc">KYC</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
+                <TabsTrigger value="app">Mobile App</TabsTrigger>
               </TabsList>
 
           {/* User Approvals Tab */}
