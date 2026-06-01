@@ -278,8 +278,9 @@ const DepositModal = ({ open, onOpenChange, onSuccess }: DepositModalProps) => {
       .from("payment-proofs")
       .upload(path, paymentProof, { upsert: false });
     if (error) throw error;
-    const { data } = supabase.storage.from("payment-proofs").getPublicUrl(path);
-    return data.publicUrl;
+    // Store the storage path (not a public URL) — bucket is private and access
+    // is granted via signed URLs generated at view time.
+    return path;
   };
 
   const handleSubmit = async () => {
