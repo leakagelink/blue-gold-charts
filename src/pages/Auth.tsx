@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   Globe,
   Zap,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +48,20 @@ const Auth = () => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [appDownloadUrl, setAppDownloadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("app_releases")
+      .select("file_url")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.file_url) setAppDownloadUrl(data.file_url);
+      });
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -468,6 +484,19 @@ const Auth = () => {
                   <CheckCircle2 className="h-3 w-3 text-accent" />
                   <span>Secured with 256-bit encryption</span>
                 </div>
+
+                {appDownloadUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.open(appDownloadUrl, "_blank")}
+                    className="w-full border-primary/30 hover:bg-primary/10"
+                  >
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    Download Android App
+                    <Download className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
               </form>
             </TabsContent>
 

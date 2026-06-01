@@ -52,6 +52,7 @@ import AdminUserPaymentMethodsDialog from "@/components/AdminUserPaymentMethodsD
 import { AdminAuditLogDialog } from "@/components/AdminAuditLogDialog";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { ToastAction } from "@/components/ui/toast";
+import AdminAppUpload from "@/components/AdminAppUpload";
 
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -1174,6 +1175,7 @@ const AdminPanel = () => {
                 <TabsTrigger value="kyc">KYC</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
+                <TabsTrigger value="app">Mobile App</TabsTrigger>
               </TabsList>
 
           {/* User Approvals Tab */}
@@ -2588,6 +2590,12 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Mobile App Tab */}
+          <TabsContent value="app">
+            <AdminAppUpload />
+          </TabsContent>
+
 
 
       {/* Edit Balance Dialog */}
