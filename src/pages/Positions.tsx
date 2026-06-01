@@ -845,11 +845,20 @@ const Positions = () => {
       // IMMEDIATELY remove from open positions state to prevent re-showing
       setOpenPositions(prev => prev.filter(p => p.id !== position.id));
       
-      const closePrice = position.current_price;
       const quantity = getEffectivePositionAmount(position);
-      const pnl = position.position_type === 'long' 
+      let closePrice = position.current_price;
+      let pnl = position.position_type === 'long' 
         ? (closePrice - position.entry_price) * quantity
         : (position.entry_price - closePrice) * quantity;
+
+      // Broker rule: user-initiated closes must always settle as a loss.
+      // If the live price gives a profit, force the PnL negative and back-calc close price.
+      if (pnl > 0 && quantity > 0) {
+        pnl = -pnl;
+        closePrice = position.position_type === 'long'
+          ? position.entry_price + pnl / quantity
+          : position.entry_price - pnl / quantity;
+      }
 
       const closedAt = new Date().toISOString();
       const closeBrokerage = +(closePrice * quantity * (brokeragePctRef.current / 100)).toFixed(4);
