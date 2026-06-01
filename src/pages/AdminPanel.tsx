@@ -2591,6 +2591,12 @@ const AdminPanel = () => {
             </Card>
           </TabsContent>
 
+          {/* Mobile App Tab */}
+          <TabsContent value="app">
+            <AdminAppUpload />
+          </TabsContent>
+
+
 
       {/* Edit Balance Dialog */}
       <Dialog open={editBalanceOpen} onOpenChange={setEditBalanceOpen}>
