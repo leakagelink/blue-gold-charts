@@ -330,22 +330,27 @@ const DepositRequests = () => {
                     </TableCell>
                     <TableCell>
                       {request.payment_proof_url ? (
-                        <a
-                          href={request.payment_proof_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const v = request.payment_proof_url as string;
+                            let url = v;
+                            if (!/^https?:\/\//i.test(v)) {
+                              const { data, error } = await supabase.storage
+                                .from("payment-proofs")
+                                .createSignedUrl(v, 3600);
+                              if (error || !data?.signedUrl) {
+                                toast({ title: "Error", description: "Could not load proof", variant: "destructive" });
+                                return;
+                              }
+                              url = data.signedUrl;
+                            }
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }}
                           className="inline-block"
                         >
-                          {/\.(jpg|jpeg|png|gif|webp)$/i.test(request.payment_proof_url) ? (
-                            <img
-                              src={request.payment_proof_url}
-                              alt="Payment proof"
-                              className="h-12 w-12 object-cover rounded border border-border hover:opacity-80 transition-opacity"
-                            />
-                          ) : (
-                            <Badge variant="outline" className="cursor-pointer">View File</Badge>
-                          )}
-                        </a>
+                          <Badge variant="outline" className="cursor-pointer">View Proof</Badge>
+                        </button>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
