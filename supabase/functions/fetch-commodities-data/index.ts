@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gfxPriceNow, gfxChangePct } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -389,9 +390,23 @@ serve(async (req) => {
 
     // Sort commodities in consistent order
     const orderMap: Record<string, number> = {
-      'XAU': 1, 'XAG': 2, 'WTI': 3, 'NG': 4, 'XCU': 5, 'XPT': 6, 'XPD': 7, 'BRENT': 8
+      'XAU': 1, 'XAG': 2, 'WTI': 3, 'NG': 4, 'XCU': 5, 'XPT': 6, 'XPD': 7, 'BRENT': 8, 'GFXM': 99
     };
-    commoditiesData.sort((a, b) => (orderMap[a.symbol] || 99) - (orderMap[b.symbol] || 99));
+    commoditiesData.sort((a, b) => (orderMap[a.symbol] || 50) - (orderMap[b.symbol] || 50));
+
+    // Append in-house GFXM (GrowFX Metal) synthetic commodity.
+    const gfxmPrice = gfxPriceNow("GFXM");
+    const gfxmChange = gfxChangePct("GFXM");
+    commoditiesData.push({
+      name: "GFX Metal",
+      symbol: "GFXM",
+      price: gfxmPrice.toFixed(2),
+      change: `${gfxmChange >= 0 ? '+' : ''}${gfxmChange.toFixed(2)}%`,
+      isPositive: gfxmChange >= 0,
+      icon: "🪙",
+      currencySymbol: "$",
+      fullName: "GrowFX Metal",
+    });
 
     console.log(`Returning ${commoditiesData.length} commodities (source: ${dataSource})`);
     

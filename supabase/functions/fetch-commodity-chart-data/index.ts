@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isGfxSymbol, gfxCandles, gfxPriceNow } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -113,6 +114,23 @@ serve(async (req) => {
     const { symbol, interval } = await req.json();
     if (!symbol) throw new Error('Symbol is required');
     const upper = symbol.toUpperCase();
+
+    // In-house synthetic instruments (GFX, GFXM, GFXC) — generated locally.
+    if (isGfxSymbol(upper)) {
+      const candles = gfxCandles(upper, interval || '1h', 100);
+      const currentPrice = gfxPriceNow(upper);
+      if (candles.length > 0) {
+        const last = candles[candles.length - 1];
+        last.close = currentPrice;
+        if (currentPrice > last.high) last.high = currentPrice;
+        if (currentPrice < last.low) last.low = currentPrice;
+      }
+      return new Response(
+        JSON.stringify({ success: true, candles, currentPrice, source: 'gfx-synth' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const yahooSymbol = SYMBOL_TO_YAHOO[upper];
     if (!yahooSymbol) {
       return new Response(

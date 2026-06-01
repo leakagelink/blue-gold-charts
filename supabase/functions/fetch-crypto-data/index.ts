@@ -1,9 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gfxPriceNow, gfxChangePct, gfx24hRange } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function buildGfxcEntry(): CryptoItem {
+  const price = gfxPriceNow("GFXC");
+  const change = gfxChangePct("GFXC");
+  const { high, low } = gfx24hRange("GFXC");
+  return {
+    name: "GrowFX Coin",
+    symbol: "GFXC",
+    price: fmt(price),
+    change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+    isPositive: change >= 0,
+    logo: "",
+    currencySymbol: "$",
+    high24h: fmt(high),
+    low24h: fmt(low),
+    id: "GFXC",
+  };
+}
 
 type CryptoItem = {
   name: string;
@@ -152,22 +171,31 @@ serve(async (req) => {
     }
 
     const requestedSymbols = normalizeRequestedSymbols(requestBody?.symbols);
-    const cacheKey = getCacheKey(requestedSymbols);
-    const cacheTtl = requestedSymbols.length > 0 ? QUOTES_CACHE_DURATION_MS : LISTINGS_CACHE_DURATION_MS;
+    // Strip GFX symbols from upstream call — they don't exist on Binance.
+    const wantsGfxc = requestedSymbols.length === 0 || requestedSymbols.includes("GFXC");
+    const binanceSymbols = requestedSymbols.filter((s) => s !== "GFXC");
+    const cacheKey = getCacheKey(binanceSymbols);
+    const cacheTtl = binanceSymbols.length > 0 ? QUOTES_CACHE_DURATION_MS : LISTINGS_CACHE_DURATION_MS;
+
+    const appendGfxc = (list: CryptoItem[]): CryptoItem[] =>
+      wantsGfxc ? [...list, buildGfxcEntry()] : list;
 
     const cached = getCachedPayload(cacheKey, cacheTtl);
     if (cached) {
-      return new Response(JSON.stringify(cached), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(cached.cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
     try {
-      const cryptoData = await fetchBinance(requestedSymbols);
+      // If client only asked for GFXC, skip Binance entirely.
+      const cryptoData = requestedSymbols.length > 0 && binanceSymbols.length === 0
+        ? []
+        : await fetchBinance(binanceSymbols);
       const payload = { cryptoData };
       setCachedPayload(cacheKey, payload);
-      return new Response(JSON.stringify(payload), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
@@ -177,13 +205,13 @@ serve(async (req) => {
 
     const stale = cacheStore.get(cacheKey)?.data;
     if (stale) {
-      return new Response(JSON.stringify(stale), {
+      return new Response(JSON.stringify({ cryptoData: appendGfxc(stale.cryptoData) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    return new Response(JSON.stringify({ cryptoData: [] }), {
+    return new Response(JSON.stringify({ cryptoData: appendGfxc([]) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

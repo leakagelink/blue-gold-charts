@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { gfxPriceNow, gfxChangePct } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -176,6 +177,20 @@ serve(async (req) => {
         currencySymbol: info.symbol,
         fullName: info.name,
       };
+    });
+
+    // Append in-house GFX/USD synthetic instrument.
+    const gfxPrice = gfxPriceNow("GFX");
+    const gfxChange = gfxChangePct("GFX");
+    forexData.push({
+      name: `GFX/${BASE_CURRENCY}`,
+      symbol: "GFX",
+      price: gfxPrice.toFixed(4),
+      change: `${gfxChange >= 0 ? '+' : ''}${gfxChange.toFixed(2)}%`,
+      isPositive: gfxChange >= 0,
+      icon: "🏷️",
+      currencySymbol: "$",
+      fullName: "GrowFX Dollar",
     });
 
     return new Response(

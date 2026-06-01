@@ -17,6 +17,7 @@
 //   Clients reconnect automatically (EventSource does this by default).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isGfxSymbol, gfxPriceNow } from "../_shared/gfxSynthetic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,8 +53,9 @@ const CRYPTO_BINANCE: Record<string, string> = {
   TRX: "trxusdt", SHIB: "shibusdt", UNI: "uniusdt", ATOM: "atomusdt",
 };
 
-function classify(symbol: string): "crypto" | "forex" | "commodity" | null {
+function classify(symbol: string): "crypto" | "forex" | "commodity" | "gfx" | null {
   const s = symbol.toUpperCase();
+  if (isGfxSymbol(s)) return "gfx";
   if (COMMODITY_TO_YAHOO[s]) return "commodity";
   if (FOREX_BASES.has(s) || s.includes("/")) return "forex";
   if (CRYPTO_BINANCE[s] || /^[A-Z0-9]{2,10}$/.test(s)) return "crypto";
@@ -258,6 +260,9 @@ serve((req) => {
     let stream: ReadableStream<Uint8Array>;
     if (asset === "crypto") {
       stream = buildBinanceStream(symbolParam);
+    } else if (asset === "gfx") {
+      const sym = symbolParam.toUpperCase() as "GFX" | "GFXM" | "GFXC";
+      stream = buildPollingStream(async () => gfxPriceNow(sym));
     } else {
       const yahoo = yahooSymbolFor(asset, symbolParam);
       if (!yahoo) {
