@@ -89,6 +89,45 @@ export type Database = {
         }
         Relationships: []
       }
+      app_releases: {
+        Row: {
+          created_at: string
+          file_path: string
+          file_size: number | null
+          file_url: string
+          id: string
+          is_active: boolean
+          release_notes: string | null
+          updated_at: string
+          uploaded_by: string | null
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          is_active?: boolean
+          release_notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          release_notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       deposit_requests: {
         Row: {
           amount: number
