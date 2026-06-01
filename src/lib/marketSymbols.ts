@@ -1,5 +1,5 @@
-const COMMODITY_SYMBOLS = new Set(["XAU", "XAG", "WTI", "BRENT", "NG", "XCU", "XPT", "XPD"]);
-const FOREX_BASE_SYMBOLS = new Set(["EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "INR", "CNY", "SGD"]);
+const COMMODITY_SYMBOLS = new Set(["XAU", "XAG", "WTI", "BRENT", "NG", "XCU", "XPT", "XPD", "GFXM"]);
+const FOREX_BASE_SYMBOLS = new Set(["EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "INR", "CNY", "SGD", "GFX"]);
 
 export const isCommoditySymbol = (symbol: string) =>
   COMMODITY_SYMBOLS.has(symbol.toUpperCase());
