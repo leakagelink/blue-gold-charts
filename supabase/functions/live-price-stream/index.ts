@@ -53,8 +53,9 @@ const CRYPTO_BINANCE: Record<string, string> = {
   TRX: "trxusdt", SHIB: "shibusdt", UNI: "uniusdt", ATOM: "atomusdt",
 };
 
-function classify(symbol: string): "crypto" | "forex" | "commodity" | null {
+function classify(symbol: string): "crypto" | "forex" | "commodity" | "gfx" | null {
   const s = symbol.toUpperCase();
+  if (isGfxSymbol(s)) return "gfx";
   if (COMMODITY_TO_YAHOO[s]) return "commodity";
   if (FOREX_BASES.has(s) || s.includes("/")) return "forex";
   if (CRYPTO_BINANCE[s] || /^[A-Z0-9]{2,10}$/.test(s)) return "crypto";
