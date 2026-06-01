@@ -112,9 +112,26 @@ serve(async (req) => {
   try {
     const { symbol, interval } = await req.json();
     if (!symbol) throw new Error('Symbol is required');
+    const upper = symbol.toUpperCase();
+
+    // In-house synthetic instruments (GFX, GFXM, GFXC) — generated locally.
+    if (isGfxSymbol(upper)) {
+      const candles = gfxCandles(upper, interval || '1h', 100);
+      const currentPrice = gfxPriceNow(upper);
+      if (candles.length > 0) {
+        const last = candles[candles.length - 1];
+        last.close = currentPrice;
+        if (currentPrice > last.high) last.high = currentPrice;
+        if (currentPrice < last.low) last.low = currentPrice;
+      }
+      return new Response(
+        JSON.stringify({ success: true, candles, currentPrice, source: 'gfx-synth' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // symbol is the quote currency vs USD (e.g. "EUR" => USDEUR=X)
-    const yahooSymbol = `USD${symbol.toUpperCase()}=X`;
+    const yahooSymbol = `USD${upper}=X`;
     const result = await fetchYahooCandles(yahooSymbol, interval || '1h');
 
     if (!result) {
