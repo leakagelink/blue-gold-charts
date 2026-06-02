@@ -833,20 +833,20 @@ const Index = () => {
                 <p className="flex items-start gap-2 justify-center md:justify-start">
                   <Globe className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>
-                    1209 Orange Street
+                    No. 42, 100 Feet Road
                     <br />
-                    Wilmington, DE 19801
+                    Indiranagar, Bengaluru, KA 560038
                     <br />
-                    United States
+                    India
                   </span>
                 </p>
                 <p>
                   <a
-                    href="tel:+13025550199"
+                    href="tel:+918025550199"
                     className="hover:text-primary transition-colors inline-flex items-center gap-2"
                   >
                     <Bell className="h-3.5 w-3.5 text-primary" />
-                    +1 (302) 555-0199
+                    +91 80 2555 0199
                   </a>
                 </p>
                 <p>
