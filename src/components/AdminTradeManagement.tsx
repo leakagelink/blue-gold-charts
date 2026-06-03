@@ -400,17 +400,11 @@ export const AdminTradeManagement = () => {
                 basePnlRef.current[position.id] = position.pnl || 0;
               }
               const basePnl = basePnlRef.current[position.id];
-              const isPositivePnl = basePnl >= 0;
               const basePnlPercent = position.margin > 0 ? (basePnl / position.margin) * 100 : 0;
-              // Small slow momentum: 0.05-0.3% drift in PnL direction
-              const momentumOffset = Math.random() * 0.25 + 0.05;
-              let adjustedPnlPercent: number;
-              
-              if (isPositivePnl) {
-                adjustedPnlPercent = basePnlPercent + momentumOffset;
-              } else {
-                adjustedPnlPercent = basePnlPercent - momentumOffset;
-              }
+              // Oscillating momentum: PnL swings between ±1% and ±5% around the broker-set base PnL
+              const momentumMagnitude = Math.random() * 4 + 1; // 1..5
+              const momentumSign = Math.random() < 0.5 ? -1 : 1;
+              const adjustedPnlPercent = basePnlPercent + (momentumSign * momentumMagnitude);
               
               pnl = (adjustedPnlPercent / 100) * position.margin;
               const quantity = getEffectivePositionAmount(position);
