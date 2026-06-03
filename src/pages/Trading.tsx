@@ -309,7 +309,7 @@ const Trading = () => {
   const [tradeAmount, setTradeAmount] = useState(""); // USD amount
   const [lotSize, setLotSize] = useState(""); // Lot size (units)
   const [inputMode, setInputMode] = useState<'amount' | 'lotSize'>('lotSize');
-  const [leverage, setLeverage] = useState(100);
+  const [leverage, setLeverage] = useState(1);
   const [stopLoss, setStopLoss] = useState(""); // Stop loss price
   const [takeProfit, setTakeProfit] = useState(""); // Take profit price
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
@@ -764,7 +764,7 @@ const Trading = () => {
     // Leverage validation — block invalid or out-of-range values
     const lev = Number(leverage);
     if (!Number.isFinite(lev) || isNaN(lev)) {
-      toast.error("Invalid leverage selected. Please choose 100x, 200x, or 500x.");
+      toast.error("Invalid leverage selected. Please choose 1x or 2x.");
       return;
     }
     if (lev > maxLeverageCap) {
@@ -772,7 +772,7 @@ const Trading = () => {
       setLeverage(maxLeverageCap);
       return;
     }
-    if (![100, 200, 500].includes(lev)) {
+    if (![1, 2].includes(lev)) {
       toast.error("Unsupported leverage value. Please pick from the dropdown.");
       return;
     }
@@ -1463,22 +1463,12 @@ const Trading = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[100, 200, 500].map((lev) => (
+                  {[1, 2].map((lev) => (
                     <SelectItem key={lev} value={lev.toString()}>{lev}x</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1">Available: 100x / 200x / 500x</p>
-              {leverage >= 100 && leverage < 200 && (
-                <div className="mt-2 p-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 text-xs text-yellow-700 dark:text-yellow-400">
-                  ⚠️ High leverage ({leverage}x): small price moves can cause large losses. Trade carefully.
-                </div>
-              )}
-              {leverage >= 200 && (
-                <div className="mt-2 p-2 rounded-md border border-red-500/50 bg-red-500/10 text-xs text-red-600 dark:text-red-400 font-medium">
-                  🚨 Extreme leverage ({leverage}x): a {(100 / leverage).toFixed(2)}% adverse move can liquidate your full margin. Only experienced traders should proceed.
-                </div>
-              )}
+              <p className="text-[11px] text-muted-foreground mt-1">Available: 1x / 2x</p>
             </div>
 
             <div className="p-3 bg-muted rounded-lg space-y-2">
@@ -1689,22 +1679,12 @@ const Trading = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[100, 200, 500].map((lev) => (
+                  {[1, 2].map((lev) => (
                     <SelectItem key={lev} value={lev.toString()}>{lev}x</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1">Available: 100x / 200x / 500x</p>
-              {leverage >= 100 && leverage < 200 && (
-                <div className="mt-2 p-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 text-xs text-yellow-700 dark:text-yellow-400">
-                  ⚠️ High leverage ({leverage}x): small price moves can cause large losses. Trade carefully.
-                </div>
-              )}
-              {leverage >= 200 && (
-                <div className="mt-2 p-2 rounded-md border border-red-500/50 bg-red-500/10 text-xs text-red-600 dark:text-red-400 font-medium">
-                  🚨 Extreme leverage ({leverage}x): a {(100 / leverage).toFixed(2)}% adverse move can liquidate your full margin. Only experienced traders should proceed.
-                </div>
-              )}
+              <p className="text-[11px] text-muted-foreground mt-1">Available: 1x / 2x</p>
             </div>
 
             <div className="p-3 bg-muted rounded-lg space-y-2">
