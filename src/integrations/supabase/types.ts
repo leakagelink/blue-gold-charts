@@ -417,12 +417,14 @@ export type Database = {
           closed_by: string | null
           created_at: string
           current_price: number
+          edited_pnl_anchor: number | null
           entry_price: number
           id: string
           leverage: number
           margin: number
           momentum_active: boolean
           momentum_direction: string | null
+          momentum_target_pnl_percent: number | null
           momentum_target_price: number | null
           opened_at: string
           pnl: number | null
@@ -443,12 +445,14 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           current_price: number
+          edited_pnl_anchor?: number | null
           entry_price: number
           id?: string
           leverage?: number
           margin: number
           momentum_active?: boolean
           momentum_direction?: string | null
+          momentum_target_pnl_percent?: number | null
           momentum_target_price?: number | null
           opened_at?: string
           pnl?: number | null
@@ -469,12 +473,14 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           current_price?: number
+          edited_pnl_anchor?: number | null
           entry_price?: number
           id?: string
           leverage?: number
           margin?: number
           momentum_active?: boolean
           momentum_direction?: string | null
+          momentum_target_pnl_percent?: number | null
           momentum_target_price?: number | null
           opened_at?: string
           pnl?: number | null
