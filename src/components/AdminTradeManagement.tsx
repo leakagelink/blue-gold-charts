@@ -1103,13 +1103,13 @@ export const AdminTradeManagement = () => {
         : newEntryPrice - newCurrentPrice;
       const newPnl = priceDiff * newAmount;
 
-      // Auto-activate momentum drift on edited trades:
-      // Long → upward 1-5%, Short → downward 1-5% (favours trade direction)
+      // Auto-activate edited PnL momentum around the broker-set PnL anchor.
       const isEdited = newPriceMode === 'edited';
-      const driftPct = (1 + Math.random() * 4) / 100; // 0.01..0.05
-      const direction: 'up' | 'down' = selectedPosition.position_type === 'long' ? 'up' : 'down';
-      const momentumTarget = isEdited
-        ? (direction === 'up' ? newCurrentPrice * (1 + driftPct) : newCurrentPrice * (1 - driftPct))
+      const driftPct = Math.random() * 4 + 1; // 1..5 PnL percentage points
+      const direction: 'up' | 'down' = Math.random() < 0.5 ? 'up' : 'down';
+      const newPnlPercent = newMargin > 0 ? (newPnl / newMargin) * 100 : 0;
+      const momentumTargetPnlPercent = isEdited
+        ? newPnlPercent + (direction === 'up' ? driftPct : -driftPct)
         : null;
 
       const previousMode = selectedPosition.price_mode ?? "live";
@@ -1124,7 +1124,9 @@ export const AdminTradeManagement = () => {
           price_mode: newPriceMode,
           momentum_active: isEdited,
           momentum_direction: isEdited ? direction : null,
-          momentum_target_price: momentumTarget,
+          edited_pnl_anchor: isEdited ? newPnl : null,
+          momentum_target_pnl_percent: momentumTargetPnlPercent,
+          momentum_target_price: null,
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', selectedPosition.id);
@@ -1145,7 +1147,7 @@ export const AdminTradeManagement = () => {
         modeLogger.info("AdminTradeManagement.handleEditTrade", "db_update",
           `Edited trade saved (${newPriceMode})`,
           { position_id: selectedPosition.id, symbol: selectedPosition.symbol, price_mode: newPriceMode,
-            data: { current_price: newCurrentPrice, pnl: newPnl, momentum_target: momentumTarget } });
+            data: { current_price: newCurrentPrice, pnl: newPnl, momentum_target_pnl_percent: momentumTargetPnlPercent } });
       }
 
       toast.success("Trade updated successfully");
@@ -1336,12 +1338,10 @@ export const AdminTradeManagement = () => {
           : p
       ));
 
-      // Update database in background - mark as 'edited' price mode + activate momentum
-      const driftPct = (1 + Math.random() * 4) / 100; // 0.01..0.05
-      const direction: 'up' | 'down' = position.position_type === 'long' ? 'up' : 'down';
-      const momentumTarget = direction === 'up'
-        ? newCurrentPrice * (1 + driftPct)
-        : newCurrentPrice * (1 - driftPct);
+      // Update database in background - mark as 'edited' and reset the broker-set PnL anchor.
+      const driftPct = Math.random() * 4 + 1; // 1..5 PnL percentage points
+      const direction: 'up' | 'down' = Math.random() < 0.5 ? 'up' : 'down';
+      const momentumTargetPnlPercent = pnlPercent + (direction === 'up' ? driftPct : -driftPct);
 
       const { error } = await supabase
         .from('positions')
@@ -1351,7 +1351,9 @@ export const AdminTradeManagement = () => {
           price_mode: 'edited',
           momentum_active: true,
           momentum_direction: direction,
-          momentum_target_price: momentumTarget,
+          edited_pnl_anchor: targetPnl,
+          momentum_target_pnl_percent: momentumTargetPnlPercent,
+          momentum_target_price: null,
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', positionId);
