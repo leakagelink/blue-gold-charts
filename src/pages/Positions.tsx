@@ -1230,16 +1230,7 @@ const Positions = () => {
             </p>
           </div>
 
-          {/* Close button (single) */}
-          {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
-            <button
-              onClick={() => setClosePositionId(position.id)}
-              className="shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
-              aria-label="Close position"
-            >
-              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-            </button>
-          )}
+          {/* Close button disabled — only Broker can close trades from admin panel */}
         </div>
 
         {/* SL/TP strip */}
