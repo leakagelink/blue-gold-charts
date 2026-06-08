@@ -1230,16 +1230,7 @@ const Positions = () => {
             </p>
           </div>
 
-          {/* Close button (single) */}
-          {showCloseButton && !selectable && !isClosing && !isClosedSuccess && (
-            <button
-              onClick={() => setClosePositionId(position.id)}
-              className="shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center transition-colors"
-              aria-label="Close position"
-            >
-              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-            </button>
-          )}
+          {/* Close button disabled — only Broker can close trades from admin panel */}
         </div>
 
         {/* SL/TP strip */}
@@ -1591,43 +1582,7 @@ const Positions = () => {
         )}
       </main>
 
-      {/* Sticky action bar (above BottomNav) — Position tab only */}
-      {activeTab === "open" && openPositions.length > 0 && (
-        <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 z-40 bg-card border-t border-border shadow-[0_-4px_20px_-8px_hsl(220_30%_20%/0.15)]">
-          <div className="flex items-center justify-between px-2 sm:px-3 py-2 sm:py-2.5 gap-1.5 sm:gap-2">
-            <button
-              onClick={toggleSelectAll}
-              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-primary px-1.5 sm:px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors"
-            >
-              <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                allSelected ? "bg-[hsl(var(--gold))] border-[hsl(var(--gold))]" : "border-border bg-card"
-              }`}>
-                {allSelected && <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gold-foreground" strokeWidth={3} />}
-              </span>
-              <span className="whitespace-nowrap">Select All</span>
-            </button>
-
-            <button
-              onClick={() => setShowFilters(v => !v)}
-              className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-bold text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors"
-            >
-              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Custom
-            </button>
-
-            <button
-              onClick={handleBulkClose}
-              disabled={selectedIds.size === 0 || bulkClosing}
-              className="h-9 sm:h-10 px-4 sm:px-6 rounded-full bg-[hsl(var(--gold))] text-gold-foreground font-bold text-xs sm:text-sm shadow-sm hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 whitespace-nowrap"
-            >
-              {bulkClosing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>Close{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}</>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Bulk close bar removed — only Broker can close trades from admin panel */}
 
       {/* Close Position Confirmation Dialog */}
       <AlertDialog open={!!closePositionId} onOpenChange={() => setClosePositionId(null)}>
