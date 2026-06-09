@@ -504,7 +504,13 @@ export const AdminTradeManagement = () => {
           })
         );
 
-        setPositions(updatedPositions);
+        setPositions((prev) => updatedPositions.map((updated) => {
+          const current = prev.find((p) => p.id === updated.id);
+          if (current && (current.price_mode !== updated.price_mode || current.status !== updated.status)) {
+            return current;
+          }
+          return updated;
+        }));
       } catch (error) {
         console.error('Error updating prices:', error);
       }
