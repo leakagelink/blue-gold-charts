@@ -473,18 +473,27 @@ export const AdminTradeManagement = () => {
               ? (currentPrice - position.entry_price) * quantity
               : (position.entry_price - currentPrice) * quantity;
 
-            // Update database only for manual and live trades
+            // Update database only for manual and live trades. Guard with the mode
+            // captured for this tick so a stale live tick cannot overwrite a trade
+            // that the Broker just switched into Edited mode.
             supabase
               .from('positions')
               .update({ 
                 current_price: currentPrice,
                 pnl: pnl,
                 updated_at: new Date().toISOString()
-              })
+              }, { count: 'exact' } as any)
               .eq('id', position.id)
               .eq('status', 'open')
-              .then(({ error }) => {
-                if (error) console.error('Error updating position:', error);
+              .eq('price_mode', (position.price_mode || 'live') as any)
+              .then(({ error, count }) => {
+                if (error) {
+                  console.error('Error updating position:', error);
+                } else if (count === 0) {
+                  modeLogger.warn("AdminTradeManagement.livefeed", "db_guard_block",
+                    `Live/manual tick skipped because price mode changed mid-flight`,
+                    { position_id: position.id, symbol: position.symbol, price_mode: position.price_mode });
+                }
               });
 
             return {
@@ -495,7 +504,13 @@ export const AdminTradeManagement = () => {
           })
         );
 
-        setPositions(updatedPositions);
+        setPositions((prev) => updatedPositions.map((updated) => {
+          const current = prev.find((p) => p.id === updated.id);
+          if (current && (current.price_mode !== updated.price_mode || current.status !== updated.status)) {
+            return current;
+          }
+          return updated;
+        }));
       } catch (error) {
         console.error('Error updating prices:', error);
       }
@@ -522,7 +537,7 @@ export const AdminTradeManagement = () => {
         let mutated = false;
         const next = prev.map((position) => {
           if (position.status !== 'open') return position;
-          if (position.price_mode === 'manual') return position;
+          if (position.price_mode === 'manual' || position.price_mode === 'edited') return position;
           const symbol = position.symbol.toUpperCase();
           const isForex = isForexSymbol(symbol);
           const isCommodity = isCommoditySymbol(symbol);

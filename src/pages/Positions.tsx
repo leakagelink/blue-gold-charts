@@ -400,7 +400,13 @@ const Positions = () => {
           };
         });
 
-        setOpenPositions(updatedPositions);
+        setOpenPositions((prev) => updatedPositions.map((updated) => {
+          const current = prev.find((p) => p.id === updated.id);
+          if (current && (current.price_mode !== updated.price_mode || current.status !== updated.status)) {
+            return current;
+          }
+          return updated;
+        }));
 
         autoCloseQueue.forEach(({ position, reason }) => {
           handleAutoClose(position, reason);
@@ -470,7 +476,7 @@ const Positions = () => {
         let mutated = false;
         const next = prev.map((position) => {
           if (position.status !== "open") return position;
-          if (position.price_mode === "manual") return position;
+          if (position.price_mode === "manual" || position.price_mode === "edited") return position;
           const symbol = position.symbol.toUpperCase();
           const isForex = isForexSymbol(symbol);
           const isCommodity = isCommoditySymbol(symbol);
