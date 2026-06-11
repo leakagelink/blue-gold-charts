@@ -1177,6 +1177,19 @@ export const AdminTradeManagement = () => {
   };
 
   const handleCloseTrade = async (position: Position) => {
+    // CLIENT-SIDE IN-FLIGHT GUARD: block re-entry from rapid double/triple clicks
+    // BEFORE any DB call. Ref is checked synchronously so concurrent invocations
+    // within the same render cycle cannot both pass.
+    if (closingIdsRef.current.has(position.id)) {
+      return;
+    }
+    closingIdsRef.current.add(position.id);
+    setClosingIds(new Set(closingIdsRef.current));
+
+    // Optimistically remove from the open-positions list so it doesn't
+    // flicker back in before fetchPositions() resolves.
+    setPositions(prev => prev.filter(p => p.id !== position.id));
+
     try {
       const pnl = position.pnl ?? calculatePnL(position);
 
@@ -1234,6 +1247,11 @@ export const AdminTradeManagement = () => {
       fetchClosedUserStats();
     } catch (error: any) {
       toast.error(error.message);
+      // Refetch on error so the row reappears if the close actually failed.
+      fetchPositions();
+    } finally {
+      closingIdsRef.current.delete(position.id);
+      setClosingIds(new Set(closingIdsRef.current));
     }
   };
 
