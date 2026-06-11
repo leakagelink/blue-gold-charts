@@ -32,10 +32,10 @@ const BINANCE_MIN_EMIT_MS = 120; // upper bound on Binance trade emits (~8/s)
 
 // ----------------------------------------------------------------- symbol maps
 const COMMODITY_TO_YAHOO: Record<string, string> = {
-  XAU: "GC=F",
-  XAG: "SI=F",
-  XPT: "PL=F",
-  XPD: "PA=F",
+  XAU: "XAUUSD=X", // Spot Gold (matches real market price)
+  XAG: "XAGUSD=X", // Spot Silver
+  XPT: "XPTUSD=X", // Spot Platinum
+  XPD: "XPDUSD=X", // Spot Palladium
   XCU: "HG=F",
   WTI: "CL=F",
   BRENT: "BZ=F",
