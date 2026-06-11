@@ -130,6 +130,8 @@ export const AdminTradeManagement = () => {
   const [tradeViewTab, setTradeViewTab] = useState<'open' | 'closed'>('open');
   const [closedPositions, setClosedPositions] = useState<Position[]>([]);
   const [closedUserStats, setClosedUserStats] = useState<ClosedUserStat[]>([]);
+  const [closingIds, setClosingIds] = useState<Set<string>>(new Set());
+  const closingIdsRef = useRef<Set<string>>(new Set());
   
   // Trade form fields
   const [assetType, setAssetType] = useState<'crypto' | 'forex' | 'commodities'>('crypto');
