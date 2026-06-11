@@ -7,11 +7,11 @@ const corsHeaders = {
 };
 
 const SYMBOL_TO_YAHOO: Record<string, string> = {
-  XAU: 'GC=F',     // Gold
-  XAG: 'SI=F',     // Silver
-  XPT: 'PL=F',     // Platinum
-  XPD: 'PA=F',     // Palladium
-  XCU: 'HG=F',     // Copper
+  XAU: 'XAUUSD=X', // Spot Gold (matches real market, not futures)
+  XAG: 'XAGUSD=X', // Spot Silver
+  XPT: 'XPTUSD=X', // Spot Platinum
+  XPD: 'XPDUSD=X', // Spot Palladium
+  XCU: 'HG=F',     // Copper (no spot ticker on Yahoo)
   WTI: 'CL=F',     // Crude Oil WTI
   BRENT: 'BZ=F',   // Brent
   NG: 'NG=F',      // Natural Gas
