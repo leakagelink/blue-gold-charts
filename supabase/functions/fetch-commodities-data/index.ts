@@ -79,10 +79,11 @@ async function fetchOneCommodityFromYahoo(meta: { yahoo: string; symbol: string;
 
 async function fetchFromYahooFinance(): Promise<any[]> {
   const symbolMap = [
-    { yahoo: 'GC=F', symbol: 'XAU', name: 'Gold', icon: '🥇', fullName: 'Gold' },
-    { yahoo: 'SI=F', symbol: 'XAG', name: 'Silver', icon: '🥈', fullName: 'Silver' },
-    { yahoo: 'PL=F', symbol: 'XPT', name: 'Platinum', icon: '💎', fullName: 'Platinum' },
-    { yahoo: 'PA=F', symbol: 'XPD', name: 'Palladium', icon: '⬜', fullName: 'Palladium' },
+    // Spot prices (XAUUSD etc) — matches real market spot, not futures contango
+    { yahoo: 'XAUUSD=X', symbol: 'XAU', name: 'Gold', icon: '🥇', fullName: 'Gold' },
+    { yahoo: 'XAGUSD=X', symbol: 'XAG', name: 'Silver', icon: '🥈', fullName: 'Silver' },
+    { yahoo: 'XPTUSD=X', symbol: 'XPT', name: 'Platinum', icon: '💎', fullName: 'Platinum' },
+    { yahoo: 'XPDUSD=X', symbol: 'XPD', name: 'Palladium', icon: '⬜', fullName: 'Palladium' },
     { yahoo: 'HG=F', symbol: 'XCU', name: 'Copper', icon: '🔶', fullName: 'Copper' },
     { yahoo: 'CL=F', symbol: 'WTI', name: 'Crude Oil', icon: '🛢️', fullName: 'Crude Oil WTI' },
     { yahoo: 'BZ=F', symbol: 'BRENT', name: 'Brent Oil', icon: '🛢️', fullName: 'Brent Crude Oil' },
