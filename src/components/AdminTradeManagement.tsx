@@ -506,13 +506,19 @@ export const AdminTradeManagement = () => {
           })
         );
 
-        setPositions((prev) => updatedPositions.map((updated) => {
-          const current = prev.find((p) => p.id === updated.id);
-          if (current && (current.price_mode !== updated.price_mode || current.status !== updated.status)) {
-            return current;
-          }
-          return updated;
-        }));
+        setPositions((prev) => {
+          const updatedMap = new Map(updatedPositions.map((u) => [u.id, u]));
+          // Only keep rows still present in prev — prevents re-injecting
+          // positions that were optimistically removed (e.g., just closed).
+          return prev.map((current) => {
+            const updated = updatedMap.get(current.id);
+            if (!updated) return current;
+            if (current.price_mode !== updated.price_mode || current.status !== updated.status) {
+              return current;
+            }
+            return updated;
+          });
+        });
       } catch (error) {
         console.error('Error updating prices:', error);
       }
