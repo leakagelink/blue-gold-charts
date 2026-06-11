@@ -1704,6 +1704,7 @@ export const AdminTradeManagement = () => {
                                   size="sm"
                                   variant="destructive"
                                   onClick={() => handleCloseTrade(position)}
+                                  disabled={closingIds.has(position.id)}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
